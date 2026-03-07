@@ -4,7 +4,7 @@
     "version": "1.5",
     "author": "Lori @ MaximumReality.xyz",
     "description": "Word list for Maximum Reality word games. Add your own words anytime!",
-    "total": 2411
+    "total": 2413
   },
   "categories": {
     "cats": [
@@ -155,6 +155,7 @@
       "mat",
       "bat",
       "rat",
+      "rib",
       "sat",
       "sin",
       "tap",
@@ -488,6 +489,7 @@
       "bark",
       "beam",
       "bias",
+      "bill",
       "bind",
       "boil",
       "brow",
