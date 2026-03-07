@@ -954,22 +954,28 @@ function expandWords(words) {
 
   return Array.from(result);
 }
-  fetch('dictionary.json')
+
+fetch('dictionary.json')
   .then(r => r.json())
   .then(dict => {
     const baseWords = Object.values(dict.categories).flat();
-const expandedWords = expandWords(baseWords);
+    const expandedWords = expandWords(baseWords);
 
-WORD_LIST = new Set(expandedWords);
+    WORD_LIST = new Set(expandedWords);
+
     console.log(`Dictionary loaded: ${WORD_LIST.size} words`);
-    document.getElementById('status-msg').textContent = "SELECT ADJACENT LETTERS TO BUILD WORDS";
+
+    document.getElementById('status-msg').textContent =
+      "SELECT ADJACENT LETTERS TO BUILD WORDS";
+
     generateBoard();
     renderGrid();
     startTimer();
   })
   .catch(err => {
     console.error('Failed to load dictionary.json:', err);
-    document.getElementById('status-msg').textContent = "DICTIONARY NOT FOUND — CHECK FILE PATH";
+    document.getElementById('status-msg').textContent =
+      "DICTIONARY NOT FOUND — CHECK FILE PATH";
   });
 </script>
 </body>
