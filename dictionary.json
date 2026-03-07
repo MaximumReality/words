@@ -4,7 +4,7 @@
     "version": "1.5",
     "author": "Lori @ MaximumReality.xyz",
     "description": "Word list for Maximum Reality word games. Add your own words anytime!",
-    "total": 2407
+    "total": 2410
   },
   "categories": {
     "cats": [
@@ -488,6 +488,7 @@
       "bark",
       "beam",
       "bias",
+      "bind",
       "boil",
       "brow",
       "bulk",
@@ -534,6 +535,7 @@
       "hive",
       "hush",
       "jazz",
+      "join",
       "jell",
       "jerk",
       "jive",
@@ -1321,6 +1323,7 @@
       "beige",
       "belly",
       "berry",
+      "blind",
       "blitz",
       "bongo",
       "boost",
