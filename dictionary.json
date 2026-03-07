@@ -4,7 +4,7 @@
     "version": "1.0",
     "author": "Lori @ MaximumReality.xyz",
     "description": "Word list for Maximum Reality word games. Add your own words anytime!",
-    "total": 2055
+    "total": 2073
   },
   "categories": {
     "cats": [
@@ -800,6 +800,7 @@
       "mull",
       "must",
       "mute",
+      "mutt",
       "nail",
       "name",
       "need",
@@ -1131,7 +1132,8 @@
       "zero",
       "zest",
       "zinc",
-      "zone"
+      "zone",
+      "zoom"
   
     ],
     "common_5": [
