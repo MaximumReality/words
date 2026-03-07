@@ -940,15 +940,66 @@ document.getElementById('status-msg').textContent = "LOADING DICTIONARY...";
 
 function expandWords(words) {
   const result = new Set();
+  const vowels = new Set('aeiou');
 
-  words.forEach(word => {
-    word = word.toLowerCase().trim();
-    result.add(word);
+  words.forEach(w => {
+    w = w.toLowerCase().trim();
+    if (!w || w.length < 3) return;
+    result.add(w);
 
-    if (word.length > 2) {
-      result.add(word + "s");
-      result.add(word + "ed");
-      result.add(word + "ing");
+    const last = w[w.length - 1];
+    const secondLast = w[w.length - 2] || '';
+    const endsInE = last === 'e';
+    const endsInConsonantY = last === 'y' && !vowels.has(secondLast);
+    const endsInS = last === 's';
+    const endsInX = last === 'x';
+    const endsInCh = w.endsWith('ch');
+    const endsInSh = w.endsWith('sh');
+    // Double final consonant for short vowel words e.g. stop→stopping
+    const shouldDouble = !vowels.has(last) && vowels.has(secondLast) && w.length >= 3;
+
+    // Skip words already ending in s/x/ch/sh — they need special handling anyway
+    if (endsInS || endsInX || endsInCh || endsInSh) return;
+
+    // ── Plurals / 3rd person ─────────────────────────────
+    if (endsInConsonantY) {
+      result.add(w.slice(0, -1) + 'ies'); // carry → carries
+    } else {
+      result.add(w + 's');                 // cat → cats, race → races
+    }
+
+    // ── Past tense ───────────────────────────────────────
+    if (endsInE) {
+      result.add(w + 'd');                 // race → raced
+    } else if (endsInConsonantY) {
+      result.add(w.slice(0, -1) + 'ied'); // carry → carried
+    } else if (shouldDouble) {
+      result.add(w + last + 'ed');         // stop → stopped
+    } else {
+      result.add(w + 'ed');               // walk → walked
+    }
+
+    // ── Present participle ───────────────────────────────
+    if (endsInE) {
+      result.add(w.slice(0, -1) + 'ing'); // race → racing
+    } else if (shouldDouble) {
+      result.add(w + last + 'ing');        // stop → stopping
+    } else {
+      result.add(w + 'ing');              // walk → walking
+    }
+
+    // ── Comparatives (short words only) ─────────────────
+    if (w.length <= 5 && !endsInConsonantY) {
+      if (endsInE) {
+        result.add(w + 'r');              // nice → nicer
+        result.add(w + 'st');             // nice → nicest
+      } else if (shouldDouble) {
+        result.add(w + last + 'er');      // big → bigger
+        result.add(w + last + 'est');     // big → biggest
+      } else {
+        result.add(w + 'er');             // fast → faster
+        result.add(w + 'est');            // fast → fastest
+      }
     }
   });
 
@@ -959,23 +1010,17 @@ fetch('dictionary.json')
   .then(r => r.json())
   .then(dict => {
     const baseWords = Object.values(dict.categories).flat();
-    const expandedWords = expandWords(baseWords);
-
-    WORD_LIST = new Set(expandedWords);
-
-    console.log(`Dictionary loaded: ${WORD_LIST.size} words`);
-
-    document.getElementById('status-msg').textContent =
-      "SELECT ADJACENT LETTERS TO BUILD WORDS";
-
+    const expanded = expandWords(baseWords);
+    WORD_LIST = new Set(expanded);
+    console.log(`Dictionary loaded: ${baseWords.length} base words → ${WORD_LIST.size} with endings`);
+    document.getElementById('status-msg').textContent = "SELECT ADJACENT LETTERS TO BUILD WORDS";
     generateBoard();
     renderGrid();
     startTimer();
   })
   .catch(err => {
     console.error('Failed to load dictionary.json:', err);
-    document.getElementById('status-msg').textContent =
-      "DICTIONARY NOT FOUND — CHECK FILE PATH";
+    document.getElementById('status-msg').textContent = "DICTIONARY NOT FOUND — CHECK FILE PATH";
   });
 </script>
 </body>
