@@ -1,0 +1,952 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>MAXIMUM REALITY: WORD CHAOS</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@700;900&display=swap');
+
+  :root {
+    --pink: #ff00ff;
+    --cyan: #00ffff;
+    --yellow: #ffff00;
+    --dark: #060610;
+    --mid: #0d0d1a;
+    --grid-bg: #0a0a14;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--dark);
+    color: var(--cyan);
+    font-family: 'Share Tech Mono', monospace;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    overflow-x: hidden;
+    padding-bottom: 20px;
+  }
+
+  /* Scanline overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0,255,255,0.015) 2px,
+      rgba(0,255,255,0.015) 4px
+    );
+    pointer-events: none;
+    z-index: 9999;
+  }
+
+  #header {
+    text-align: center;
+    padding: 14px 10px 6px;
+    width: 100%;
+  }
+
+  #title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: clamp(0.9rem, 4vw, 1.3rem);
+    font-weight: 900;
+    color: var(--pink);
+    text-shadow: 0 0 10px var(--pink), 0 0 30px var(--pink);
+    letter-spacing: 3px;
+    animation: titleFlicker 4s infinite;
+  }
+
+  #subtitle {
+    font-size: 0.6rem;
+    color: var(--cyan);
+    opacity: 0.7;
+    letter-spacing: 2px;
+    margin-top: 2px;
+  }
+
+  @keyframes titleFlicker {
+    0%,95%,100% { opacity: 1; }
+    96% { opacity: 0.3; }
+    97% { opacity: 1; }
+    98% { opacity: 0.5; }
+  }
+
+  /* Stats bar */
+  #stats {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    width: 100%;
+    max-width: 420px;
+    padding: 8px 16px;
+    margin: 6px 0;
+    background: rgba(255,0,255,0.07);
+    border-top: 1px solid rgba(255,0,255,0.3);
+    border-bottom: 1px solid rgba(255,0,255,0.3);
+  }
+
+  .stat-block { text-align: center; }
+  .stat-label { font-size: 0.55rem; color: var(--pink); letter-spacing: 2px; opacity: 0.8; }
+  .stat-value { font-family: 'Orbitron', sans-serif; font-size: 1.1rem; color: var(--cyan); text-shadow: 0 0 8px var(--cyan); }
+
+  /* Timer bar */
+  #timer-wrap {
+    width: 100%;
+    max-width: 420px;
+    padding: 0 16px;
+    margin-bottom: 4px;
+  }
+
+  #timer-bar-bg {
+    width: 100%;
+    height: 6px;
+    background: rgba(0,255,255,0.1);
+    border-radius: 3px;
+    overflow: hidden;
+    border: 1px solid rgba(0,255,255,0.2);
+  }
+
+  #timer-bar {
+    height: 100%;
+    width: 100%;
+    background: linear-gradient(90deg, var(--cyan), var(--pink));
+    border-radius: 3px;
+    transition: width 0.1s linear, background 0.5s;
+  }
+
+  #timer-bar.danger {
+    background: linear-gradient(90deg, #ff4400, var(--pink));
+    animation: dangerPulse 0.3s infinite alternate;
+  }
+
+  @keyframes dangerPulse {
+    from { opacity: 1; }
+    to { opacity: 0.5; }
+  }
+
+  /* Current word display */
+  #word-display-wrap {
+    width: 100%;
+    max-width: 420px;
+    padding: 6px 16px;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  #word-display {
+    font-family: 'Orbitron', sans-serif;
+    font-size: clamp(1.2rem, 5vw, 1.8rem);
+    font-weight: 700;
+    color: var(--yellow);
+    text-shadow: 0 0 15px var(--yellow);
+    letter-spacing: 6px;
+    min-height: 2rem;
+    transition: all 0.1s;
+  }
+
+  #word-display.valid { color: #00ff88; text-shadow: 0 0 20px #00ff88; }
+  #word-display.invalid { color: #ff4444; text-shadow: 0 0 10px #ff4444; animation: shake 0.3s; }
+
+  @keyframes shake {
+    0%,100% { transform: translateX(0); }
+    20% { transform: translateX(-6px); }
+    40% { transform: translateX(6px); }
+    60% { transform: translateX(-4px); }
+    80% { transform: translateX(4px); }
+  }
+
+  /* Letter grid */
+  #grid-wrap {
+    position: relative;
+    margin: 4px auto;
+  }
+
+  #letter-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    padding: 14px;
+    background: var(--grid-bg);
+    border: 2px solid var(--pink);
+    box-shadow: 0 0 20px rgba(255,0,255,0.3), inset 0 0 30px rgba(0,0,0,0.5);
+    border-radius: 4px;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: none;
+  }
+
+  .letter-cell {
+    width: clamp(54px, 14vw, 68px);
+    height: clamp(54px, 14vw, 68px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Orbitron', sans-serif;
+    font-size: clamp(1.1rem, 4vw, 1.4rem);
+    font-weight: 900;
+    color: var(--cyan);
+    background: rgba(0,255,255,0.04);
+    border: 1.5px solid rgba(0,255,255,0.25);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.08s;
+    position: relative;
+    text-shadow: 0 0 8px var(--cyan);
+  }
+
+  .letter-cell:active { transform: scale(0.92); }
+
+  .letter-cell.selected {
+    background: rgba(255,0,255,0.25);
+    border-color: var(--pink);
+    color: var(--pink);
+    text-shadow: 0 0 12px var(--pink);
+    transform: scale(1.08);
+    z-index: 2;
+  }
+
+  .letter-cell.first-selected {
+    background: rgba(255,255,0,0.2);
+    border-color: var(--yellow);
+    color: var(--yellow);
+    text-shadow: 0 0 12px var(--yellow);
+  }
+
+  .letter-cell.adjacent-hint {
+    border-color: rgba(0,255,255,0.6);
+    background: rgba(0,255,255,0.08);
+  }
+
+  /* Selection order number */
+  .letter-cell.selected::after {
+    content: attr(data-order);
+    position: absolute;
+    top: 2px;
+    right: 4px;
+    font-size: 0.5rem;
+    color: var(--pink);
+    opacity: 0.8;
+  }
+
+  /* SVG connector lines */
+  #connector-svg {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  /* Control buttons */
+  #controls {
+    display: flex;
+    gap: 12px;
+    margin: 8px 0;
+    align-items: center;
+  }
+
+  .btn {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+    padding: 10px 18px;
+    border: 2px solid;
+    background: transparent;
+    cursor: pointer;
+    border-radius: 2px;
+    transition: all 0.15s;
+    text-transform: uppercase;
+  }
+
+  .btn-submit {
+    border-color: var(--cyan);
+    color: var(--cyan);
+    text-shadow: 0 0 8px var(--cyan);
+    box-shadow: 0 0 10px rgba(0,255,255,0.2);
+  }
+  .btn-submit:hover, .btn-submit:active {
+    background: rgba(0,255,255,0.15);
+    box-shadow: 0 0 20px rgba(0,255,255,0.5);
+  }
+
+  .btn-clear {
+    border-color: rgba(255,0,255,0.5);
+    color: rgba(255,0,255,0.8);
+  }
+  .btn-clear:hover, .btn-clear:active {
+    background: rgba(255,0,255,0.1);
+  }
+
+  .btn-shuffle {
+    border-color: rgba(255,255,0,0.5);
+    color: rgba(255,255,0,0.8);
+  }
+  .btn-shuffle:hover, .btn-shuffle:active {
+    background: rgba(255,255,0,0.1);
+  }
+
+  /* Found words list */
+  #found-section {
+    width: 100%;
+    max-width: 420px;
+    padding: 6px 16px;
+  }
+
+  #found-label {
+    font-size: 0.55rem;
+    color: var(--pink);
+    letter-spacing: 3px;
+    margin-bottom: 6px;
+    opacity: 0.8;
+  }
+
+  #found-words {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    min-height: 30px;
+  }
+
+  .found-word {
+    font-size: 0.7rem;
+    padding: 3px 8px;
+    border: 1px solid;
+    border-radius: 2px;
+    animation: wordPop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  }
+
+  @keyframes wordPop {
+    from { transform: scale(0); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+  }
+
+  .found-3 { border-color: rgba(0,255,255,0.4); color: var(--cyan); }
+  .found-4 { border-color: rgba(255,0,255,0.5); color: var(--pink); }
+  .found-5 { border-color: rgba(255,255,0,0.6); color: var(--yellow); text-shadow: 0 0 6px var(--yellow); }
+  .found-6plus { border-color: #00ff88; color: #00ff88; text-shadow: 0 0 8px #00ff88; }
+
+  /* Status message */
+  #status-msg {
+    font-size: 0.65rem;
+    letter-spacing: 2px;
+    min-height: 1.2rem;
+    color: var(--pink);
+    text-align: center;
+    margin: 2px 0;
+    text-transform: uppercase;
+  }
+
+  /* Game Over / Round Over overlay */
+  #overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.88);
+    z-index: 500;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    gap: 16px;
+    padding: 20px;
+  }
+
+  #overlay.active { display: flex; }
+
+  #overlay-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: clamp(1.4rem, 6vw, 2.2rem);
+    font-weight: 900;
+    color: var(--pink);
+    text-shadow: 0 0 20px var(--pink), 0 0 60px var(--pink);
+    animation: titleFlicker 2s infinite;
+  }
+
+  #overlay-score {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 1rem;
+    color: var(--cyan);
+  }
+
+  #overlay-words {
+    font-size: 0.7rem;
+    color: rgba(0,255,255,0.7);
+    max-width: 320px;
+    line-height: 1.8;
+  }
+
+  #overlay-cat {
+    font-size: 3rem;
+    animation: catBounce 0.6s infinite alternate;
+  }
+
+  @keyframes catBounce {
+    from { transform: translateY(0) rotate(-5deg); }
+    to { transform: translateY(-10px) rotate(5deg); }
+  }
+
+  /* Score flash */
+  .score-flash {
+    position: fixed;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 1.4rem;
+    font-weight: 900;
+    pointer-events: none;
+    z-index: 200;
+    animation: floatUp 1s forwards;
+  }
+
+  @keyframes floatUp {
+    from { transform: translateY(0); opacity: 1; }
+    to { transform: translateY(-80px); opacity: 0; }
+  }
+
+  /* Glitch flash on big word */
+  @keyframes glitchFlash {
+    0%,100% { background: var(--dark); }
+    25% { background: rgba(255,0,255,0.15); }
+    50% { background: rgba(0,255,255,0.1); }
+    75% { background: rgba(255,255,0,0.08); }
+  }
+
+  body.glitching { animation: glitchFlash 0.4s; }
+
+  /* Round indicator */
+  #round-info {
+    font-size: 0.6rem;
+    color: rgba(255,0,255,0.6);
+    letter-spacing: 2px;
+    margin-top: 2px;
+  }
+</style>
+</head>
+<body>
+
+<div id="header">
+  <div id="title">MAXIMUM REALITY: WORD CHAOS</div>
+  <div id="subtitle">// AZUL & MOCHKIL'S LEXICON ENGINE //</div>
+  <div id="round-info">ROUND <span id="round-num">1</span> &nbsp;|&nbsp; WORDS NEEDED: <span id="words-needed">5</span></div>
+</div>
+
+<div id="stats">
+  <div class="stat-block">
+    <div class="stat-label">SCORE</div>
+    <div class="stat-value" id="score-disp">0</div>
+  </div>
+  <div class="stat-block">
+    <div class="stat-label">BEST</div>
+    <div class="stat-value" id="best-disp">0</div>
+  </div>
+  <div class="stat-block">
+    <div class="stat-label">FOUND</div>
+    <div class="stat-value" id="found-count">0</div>
+  </div>
+</div>
+
+<div id="timer-wrap">
+  <div id="timer-bar-bg"><div id="timer-bar"></div></div>
+</div>
+
+<div id="word-display-wrap">
+  <div id="word-display">&nbsp;</div>
+</div>
+
+<div id="grid-wrap">
+  <svg id="connector-svg"></svg>
+  <div id="letter-grid"></div>
+</div>
+
+<div id="controls">
+  <button class="btn btn-clear" onclick="clearSelection()">CLEAR</button>
+  <button class="btn btn-submit" onclick="submitWord()">SUBMIT</button>
+  <button class="btn btn-shuffle" onclick="shuffleBoard()">SHUFFLE</button>
+</div>
+
+<div id="status-msg">SELECT ADJACENT LETTERS TO BUILD WORDS</div>
+
+<div id="found-section">
+  <div id="found-label">// WORDS FOUND //</div>
+  <div id="found-words"></div>
+</div>
+
+<!-- Overlay -->
+<div id="overlay">
+  <div id="overlay-cat">🐱</div>
+  <div id="overlay-title" id="overlay-title-text">ROUND CLEAR!</div>
+  <div id="overlay-score"></div>
+  <div id="overlay-words"></div>
+  <button class="btn btn-submit" onclick="nextRound()" style="margin-top:10px;" id="overlay-btn">NEXT ROUND</button>
+</div>
+
+<script>
+// ── WORD LIST (common 3-8 letter English words) ──────────────────────────
+const WORD_LIST = new Set([
+  // 3-letter
+  "the","and","for","are","but","not","you","all","can","had","her","was","one","our","out","day","get","has","him","his","how","man","new","now","old","see","two","way","who","boy","did","its","let","put","say","she","too","use","cat","dog","hat","mat","bat","rat","sat","pat","tap","map","nap","cap","cup","cut","gut","hut","nut","rut","bug","dug","hug","jug","lug","mug","rug","tug","big","dig","fig","gig","jig","pig","wig","bad","dad","fad","had","lad","mad","sad","cab","dab","fab","gab","jab","lab","nab","tab","ban","can","fan","man","pan","ran","tan","van","bar","car","far","jar","tar","war","eat","bat","fat","hat","mat","sat","bag","gag","lag","nag","rag","sag","tag","wag","bay","day","gay","hay","jay","lay","may","pay","ray","say","way","bed","fed","led","red","wed","hen","men","pen","ten","den","bit","fit","hit","kit","pit","sit","wit","bog","cog","dog","fog","hog","log","top","cop","hop","mop","pop","sop","bud","dud","mud","pub","rub","sub","tub","ace","age","ago","aid","aim","air","ale","ant","ape","arc","arm","art","ash","ask","awe","axe","aye","bed","bid","bow","box","boy","bun","bus","buy","bye","cob","cod","coo","cot","cow","cry","cub","cue","dam","dew","die","dim","dip","doe","dot","dry","dye","ear","egg","ego","elk","elm","emu","end","era","eve","ewe","eye","fan","fax","fee","few","fib","fin","foe","fry","fun","fur","gal","gap","gas","gel","gem","god","got","gun","gut","guy","gym","ham","hay","hip","hit","hoe","hop","hot","hub","hue","hum","ice","icy","ill","imp","ink","inn","ion","ire","irk","ivy","jam","jaw","jet","job","joy","key","kin","knob","lab","lap","law","leg","lie","lip","lit","lot","low","lye","mob","mod","mom","mop","mud","nap","net","nip","nod","nor","nun","oak","oat","odd","off","oil","old","opt","orb","ore","our","owe","own","pad","pal","paw","pay","pea","peg","per","pet","pie","pin","pit","ply","pod","pot","pow","pro","pun","pup","pus","pew","ram","ran","rap","raw","ref","rep","rev","rid","rim","rip","rob","rod","row","rue","rum","run","rut","rye","sac","sad","sap","sat","saw","sax","say","sea","set","sew","shy","sip","ski","sky","sly","sob","sod","son","sow","spa","spy","sty","sue","sum","sun","sup","tab","tan","tar","tax","tea","tie","tin","tip","toe","ton","too","tot","toy","try","tub","tug","turf","two","urn","van","vat","vet","via","vie","vim","vow","wad","war","was","web","wed","wet","wig","win","wit","woe","wok","won","woo","wow","yam","yap","yen","yew","yip","yore","you","zap","zen","zip","zoo",
+  // 4-letter
+  "able","also","area","army","away","back","ball","band","bank","base","bath","bear","beat","been","bell","belt","best","bird","bite","blow","blue","boat","body","bomb","bond","bone","book","boom","boot","born","both","bowl","burn","call","calm","came","card","care","case","cash","cast","cave","cent","chad","chef","chip","city","clam","clap","clan","claw","clay","clip","club","clue","coal","coat","code","coil","coin","cold","come","cool","cope","cord","core","corn","cost","cozy","crab","crop","crow","cure","curl","dame","damp","dare","dark","data","dawn","dead","deaf","deal","dean","debt","deck","deed","deep","deft","deny","desk","dial","diet","dirt","dish","disk","dive","dock","dome","done","doom","door","dose","down","drag","draw","drop","drum","dual","dump","dune","dusk","dust","duty","each","earl","earn","ease","east","easy","edge","edit","else","emit","epic","even","ever","evil","exam","face","fact","fail","fair","fake","fall","fame","farm","fast","fate","fear","feat","feel","feet","fell","felt","file","fill","film","find","fine","fire","firm","fish","fist","five","flag","flat","flaw","flea","fled","flew","flip","flit","flow","foam","fold","folk","fond","font","food","fool","foot","ford","fore","fork","form","fort","foul","four","free","from","fuel","full","fume","fund","fuse","fuzz","gain","gala","game","gang","gasp","gate","gave","gear","gift","girl","give","glad","glee","glow","glue","goat","gold","golf","gone","good","gown","grab","gram","gray","grew","grid","grin","grip","grit","grow","gulf","gust","guts","guys","hack","hail","half","halt","hang","hard","hare","harm","harp","hawk","haze","hazy","head","heal","heap","heat","heed","heel","held","helm","help","here","hero","hide","high","hill","hire","hole","holy","home","hook","hope","horn","host","hour","huge","hull","hump","hunt","hurl","hymn","icon","idea","idle","inch","into","iron","isle","itch","item","jack","jade","jail","joke","jolt","jump","just","keen","keep","kill","kind","king","knee","knew","knit","knob","knot","know","lack","lady","laid","lake","lame","lamp","land","lane","last","late","laud","lawn","lead","leaf","lean","leap","left","lend","lift","like","lily","lime","limp","line","link","lion","list","live","load","loan","loft","lone","long","look","loop","lore","lose","loss","lost","loud","love","luck","lump","lure","lurk","lust","made","mail","main","make","male","mall","malt","mane","many","mare","mark","mars","mast","mate","math","maze","meal","meat","meet","melt","memo","mere","mesh","mild","mile","milk","mill","mind","mine","mint","miss","mist","mode","mole","mope","more","most","move","much","mule","mull","must","mute","nail","name","need","neon","nest","next","nice","nine","node","none","noon","norm","note","noun","nude","numb","oath","obey","once","only","open","oral","over","pace","page","pale","palm","pane","park","part","past","path","peak","peck","peel","peer","pest","pick","pike","pile","pine","pink","plan","play","plot","plow","ploy","plug","plum","plus","poet","pole","poll","polo","pond","pool","poor","pore","port","pose","post","pour","prey","prim","prod","prom","prop","pull","pump","pure","push","quad","rack","raid","rail","rain","rake","ramp","rank","rare","rash","rate","read","real","reap","rear","reed","reel","rein","rend","rent","rest","rice","rich","ride","rift","ring","riot","risk","roam","roar","robe","rock","rode","roll","roof","room","root","rope","rose","rude","ruin","rule","rush","rust","safe","sage","sail","sake","sale","same","sand","sane","sang","sank","save","scan","scar","seal","seam","seep","self","sell","send","shed","ship","shoe","shop","shot","show","sick","side","sign","silk","sill","sing","sink","site","size","skin","skip","slam","slap","slid","slim","slip","slit","slob","slop","slot","slow","slug","slum","snap","snob","snow","soak","soap","sock","sofa","soil","sold","sole","some","song","soon","sore","sort","soul","soup","sour","span","spar","spin","spot","stab","stag","star","stay","stem","step","stew","stop","stow","stub","stud","stun","such","suit","sulk","sung","sunk","sure","surf","swap","swam","swan","swat","swim","tail","tale","talk","tall","tame","tang","tank","tape","task","team","tear","tell","temp","tend","tent","term","test","text","than","that","them","then","they","thin","this","tide","tidy","tile","till","time","tiny","tire","toad","told","toll","tomb","tome","tone","took","tool","torn","toss","tote","tour","town","trap","tree","trim","trip","true","tube","tune","turn","tuft","ugly","undo","unit","upon","used","vain","vale","vast","veil","vend","vent","verb","very","vest","veto","vibe","view","vile","vine","void","volt","vote","wade","wage","wake","walk","wall","wand","warm","warp","wash","wave","weak","weal","wean","weed","week","weep","well","went","were","west","when","whim","whip","wide","wild","will","wind","wine","wing","wink","wire","wise","wish","with","woke","womb","wood","wool","word","wore","work","worm","worn","wove","wrap","wren","writ","yard","yarn","year","yell","your","zeal","zero","zest","zinc","zone",
+  // 5+ letter
+  "about","above","abuse","after","again","agent","agree","ahead","alarm","album","alert","alien","align","alive","alley","allow","alone","along","aloud","alpha","alter","angel","anger","angle","ankle","annoy","apart","apple","apply","arena","argue","arise","armor","aroma","arose","array","aside","atlas","attic","audio","audit","avoid","awake","award","aware","awful","badly","basic","batch","beach","beard","beast","began","begin","being","below","bench","bible","birth","black","blade","blame","bland","blank","blaze","bleak","blend","bless","blink","block","blood","bloom","blown","board","boast","boost","booth","brave","bread","break","breed","brick","bride","brief","bring","broad","broke","brook","broth","brown","brush","build","built","burst","cabin","camel","candy","cargo","carry","catch","cause","cease","chain","chaos","check","chess","chest","child","chill","china","choir","chose","civic","civil","claim","clash","class","clean","clear","clerk","click","climb","cling","clock","clone","close","cloth","cloud","coach","coast","cobra","color","combo","comet","comes","comma","coral","couch","could","count","court","cover","craft","crane","crash","crazy","cream","creek","crime","cross","crowd","crown","crush","dance","dealt","decay","delay","demon","depot","depth","derby","devil","dirty","dizzy","doubt","dough","dowry","dream","drink","drive","drool","drove","drown","dryer","eagle","early","earth","eight","elite","email","empty","enemy","enjoy","enter","equal","error","essay","event","every","exact","exist","extra","fable","faint","faith","false","fancy","fatal","fault","feast","fence","fetch","fever","fiery","fifth","fifty","fight","final","first","flame","flank","flare","flash","flesh","flock","flood","floor","flour","fluid","flute","focal","focus","foggy","force","forge","forth","found","frame","frank","fresh","front","frost","froze","fruit","fully","funny","ghoul","ghost","giant","giddy","gland","glass","gleam","globe","gloom","glory","gloss","glove","going","grace","grade","grand","grant","grape","graph","grasp","grass","graze","greed","green","greet","grief","groan","groom","gross","group","grouse","grove","growl","gruel","gruff","guess","guest","guide","guild","guile","guilt","guise","gusto","gutsy","happy","harsh","haste","haven","heart","heavy","hello","hence","hinge","hippo","hoist","honey","honor","horse","hotel","house","hover","human","humor","hurry","husky","icing","ideal","image","imply","infer","inner","input","irony","ivory","jewel","joint","joust","judge","juice","juicy","jumbo","khaki","knack","knife","knock","label","large","laser","latch","later","laugh","layer","learn","leash","least","leave","legal","level","light","limit","linen","liner","liner","local","lodge","logic","loose","lover","lower","loyal","lucky","lunar","lying","magic","major","maker","manor","maple","march","match","mayor","media","mercy","merit","metal","might","minor","mirth","model","money","month","moose","moral","motor","motto","mourn","mouth","muddy","music","nerve","never","night","ninja","noble","noise","north","novel","nurse","ocean","offer","often","olive","onion","orbit","order","other","ought","ounce","outer","owned","ozone","paint","panic","paper","pasta","patch","pause","peace","peach","pearl","pedal","penny","perch","phase","phone","photo","piano","piece","pilot","pitch","pixel","pizza","place","plain","plane","plant","plate","plaza","plead","pluck","plumb","plume","plunk","point","poker","polar","pound","power","press","price","pride","prime","print","prior","prize","probe","prone","proof","proud","prove","psalm","pulse","punch","pupil","purer","queen","queen","query","queue","quick","quiet","quota","quote","rabbi","radar","radio","raise","rally","ramen","range","rapid","ratio","reach","ready","realm","rebel","refer","reign","relax","relay","repay","repel","reply","rider","ridge","rifle","risky","rival","river","robin","rocky","rouge","rough","round","route","rover","royal","ruddy","rugby","ruler","rural","sadly","saint","scale","scene","score","scout","screw","seize","sense","serve","seven","shaft","shake","shale","shame","share","shark","sharp","sheer","shelf","shell","shift","shirt","shore","short","shout","shove","siege","sight","silly","since","sixth","sixty","skill","skull","slave","sleep","slice","slide","slope","small","smart","smell","smile","smoke","snake","solar","solid","solve","sorry","south","space","spark","spawn","speak","speed","spell","spice","spill","spine","spite","split","spoke","spook","spoon","spray","squad","squat","squid","stack","staff","stage","stain","stale","stall","stand","state","steak","steal","steel","steep","steer","stern","stick","stiff","still","stock","stomp","stone","stood","store","storm","story","stout","strap","straw","stray","strip","stuck","study","stump","style","sugar","suite","sunny","super","surge","swamp","sweep","sweet","swirl","sword","taboo","table","taste","teach","tempo","tense","theta","think","thorn","those","three","threw","throw","thumb","tiara","tiger","tiger","tight","timer","tired","title","toast","token","total","touch","tough","tower","towel","toxic","trace","track","trade","trail","train","trait","trick","troll","troop","trout","truck","truly","trunk","truth","tumor","tumor","tuner","turbo","twist","typed","ulcer","ultra","under","union","until","upper","upset","urban","utile","utter","value","valve","video","vigor","viral","virus","visit","vista","vital","vivid","vocal","voice","vague","valid","vault","venom","vinyl","visor","vivid","vocal","voice","voice","vomit","voter","waltz","water","weird","whale","wheat","wheel","where","which","while","whirl","white","whole","whose","whose","width","witch","woman","women","world","worry","worse","worst","worth","would","wound","wring","write","wrote","yacht","yield","young","youth","zebra","zilch",
+  "azul","mochi","chaos","glitch","neon","pixel","cyber","purr","meow","paws","claw","fuzz","hiss","kitty"
+]);
+
+// ── GAME STATE ───────────────────────────────────────────────────────────
+const GRID_SIZE = 4;
+const ROUND_WORDS_NEEDED = [5, 6, 7, 8, 9];
+const ROUND_TIME = [90, 80, 70, 60, 50]; // seconds per round
+
+let letters = [];
+let selected = [];
+let foundWords = new Set();
+let score = 0;
+let highScore = parseInt(localStorage.getItem('wordchaos_hs') || '0');
+let round = 1;
+let timerInterval = null;
+let timeLeft = 0;
+let gameOver = false;
+
+// Weighted letter distribution (more vowels, common consonants)
+const LETTER_POOL = "AAAAAAAAABBBCCCDDDDEEEEEEEEEEFFFGGGHHHIIIIIIIIJKLLLLMMMNNNNNNOOOOOOOOPPPPQRRRRRRSSSSTTTTTTTUUUUVVWWXYYZ";
+
+function randomLetter() {
+  return LETTER_POOL[Math.floor(Math.random() * LETTER_POOL.length)];
+}
+
+// ── BOARD SETUP ──────────────────────────────────────────────────────────
+function generateBoard() {
+  letters = [];
+  for (let i = 0; i < GRID_SIZE * GRID_SIZE; i++) {
+    letters.push(randomLetter());
+  }
+  // Ensure at least 4 vowels
+  const vowels = 'AEIOU';
+  let vowelCount = letters.filter(l => vowels.includes(l)).length;
+  while (vowelCount < 4) {
+    const idx = Math.floor(Math.random() * letters.length);
+    if (!vowels.includes(letters[idx])) {
+      letters[idx] = vowels[Math.floor(Math.random() * vowels.length)];
+      vowelCount++;
+    }
+  }
+}
+
+function renderGrid() {
+  const grid = document.getElementById('letter-grid');
+  grid.innerHTML = '';
+  letters.forEach((letter, i) => {
+    const cell = document.createElement('div');
+    cell.className = 'letter-cell';
+    cell.textContent = letter;
+    cell.dataset.idx = i;
+    cell.addEventListener('click', () => handleCellClick(i));
+    // Touch drag support
+    cell.addEventListener('touchstart', handleTouchStart, { passive: false });
+    cell.addEventListener('touchmove', handleTouchMove, { passive: false });
+    cell.addEventListener('touchend', handleTouchEnd, { passive: false });
+    grid.appendChild(cell);
+  });
+}
+
+// ── ADJACENCY ────────────────────────────────────────────────────────────
+function getRow(idx) { return Math.floor(idx / GRID_SIZE); }
+function getCol(idx) { return idx % GRID_SIZE; }
+
+function isAdjacent(a, b) {
+  const dr = Math.abs(getRow(a) - getRow(b));
+  const dc = Math.abs(getCol(a) - getCol(b));
+  return dr <= 1 && dc <= 1 && !(dr === 0 && dc === 0);
+}
+
+// ── SELECTION ────────────────────────────────────────────────────────────
+function handleCellClick(idx) {
+  if (gameOver) return;
+  
+  // If already selected at a non-last position, ignore
+  const posInSelected = selected.indexOf(idx);
+  
+  if (posInSelected !== -1) {
+    // Clicked already-selected: trim back to this point
+    selected = selected.slice(0, posInSelected + 1);
+    updateSelectionUI();
+    return;
+  }
+  
+  // Must be adjacent to last selected
+  if (selected.length > 0) {
+    const last = selected[selected.length - 1];
+    if (!isAdjacent(last, idx)) {
+      setStatus("NOT ADJACENT — PICK A NEIGHBORING CELL");
+      shakeWordDisplay();
+      return;
+    }
+  }
+  
+  selected.push(idx);
+  updateSelectionUI();
+}
+
+let isDragging = false;
+let dragVisited = new Set();
+
+function handleTouchStart(e) {
+  if (e.cancelable) e.preventDefault();
+  isDragging = true;
+  dragVisited = new Set();
+  const idx = parseInt(e.currentTarget.dataset.idx);
+  selected = [];
+  dragVisited.add(idx);
+  selected.push(idx);
+  updateSelectionUI();
+}
+
+function handleTouchMove(e) {
+  if (!isDragging || e.cancelable) {
+    if (e.cancelable) e.preventDefault();
+  }
+  const touch = e.touches[0];
+  const el = document.elementFromPoint(touch.clientX, touch.clientY);
+  if (el && el.classList.contains('letter-cell')) {
+    const idx = parseInt(el.dataset.idx);
+    if (!dragVisited.has(idx) && selected.length > 0) {
+      const last = selected[selected.length - 1];
+      if (isAdjacent(last, idx)) {
+        dragVisited.add(idx);
+        selected.push(idx);
+        updateSelectionUI();
+      }
+    }
+  }
+}
+
+function handleTouchEnd(e) {
+  isDragging = false;
+  if (selected.length >= 3) {
+    submitWord();
+  }
+}
+
+function updateSelectionUI() {
+  const cells = document.querySelectorAll('.letter-cell');
+  
+  // Reset all
+  cells.forEach(c => {
+    c.classList.remove('selected', 'first-selected', 'adjacent-hint');
+    c.removeAttribute('data-order');
+  });
+  
+  // Highlight selected
+  selected.forEach((idx, order) => {
+    cells[idx].classList.add(order === 0 ? 'first-selected' : 'selected');
+    cells[idx].dataset.order = order + 1;
+  });
+  
+  // Show adjacent hints for last cell
+  if (selected.length > 0) {
+    const last = selected[selected.length - 1];
+    cells.forEach((cell, idx) => {
+      if (!selected.includes(idx) && isAdjacent(last, idx)) {
+        cell.classList.add('adjacent-hint');
+      }
+    });
+  }
+  
+  // Update word display
+  const word = selected.map(i => letters[i]).join('');
+  const wd = document.getElementById('word-display');
+  wd.textContent = word || '\u00a0';
+  wd.className = '';
+  
+  // Draw connectors
+  drawConnectors();
+}
+
+function drawConnectors() {
+  const svg = document.getElementById('connector-svg');
+  svg.innerHTML = '';
+  if (selected.length < 2) return;
+  
+  const gridEl = document.getElementById('letter-grid');
+  const cells = gridEl.querySelectorAll('.letter-cell');
+  const gridRect = gridEl.getBoundingClientRect();
+  const svgRect = document.getElementById('grid-wrap').getBoundingClientRect();
+  
+  for (let i = 0; i < selected.length - 1; i++) {
+    const a = cells[selected[i]].getBoundingClientRect();
+    const b = cells[selected[i+1]].getBoundingClientRect();
+    const x1 = a.left + a.width/2 - svgRect.left;
+    const y1 = a.top + a.height/2 - svgRect.top;
+    const x2 = b.left + b.width/2 - svgRect.left;
+    const y2 = b.top + b.height/2 - svgRect.top;
+    
+    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    line.setAttribute('x1', x1); line.setAttribute('y1', y1);
+    line.setAttribute('x2', x2); line.setAttribute('y2', y2);
+    line.setAttribute('stroke', '#ff00ff');
+    line.setAttribute('stroke-width', '2');
+    line.setAttribute('stroke-opacity', '0.6');
+    line.setAttribute('stroke-linecap', 'round');
+    svg.appendChild(line);
+  }
+}
+
+function clearSelection() {
+  selected = [];
+  updateSelectionUI();
+  setStatus("SELECTION CLEARED");
+}
+
+// ── WORD SUBMISSION ──────────────────────────────────────────────────────
+function submitWord() {
+  const word = selected.map(i => letters[i]).join('').toLowerCase();
+  const wd = document.getElementById('word-display');
+  
+  if (word.length < 3) {
+    setStatus("MINIMUM 3 LETTERS — TRY AGAIN");
+    shakeWordDisplay();
+    selected = [];
+    updateSelectionUI();
+    return;
+  }
+  
+  if (foundWords.has(word)) {
+    setStatus("ALREADY FOUND: " + word.toUpperCase());
+    wd.className = 'invalid';
+    setTimeout(() => { wd.className = ''; }, 500);
+    selected = [];
+    updateSelectionUI();
+    return;
+  }
+  
+  if (WORD_LIST.has(word)) {
+    // Valid word!
+    foundWords.add(word);
+    const pts = calcPoints(word);
+    score += pts;
+    updateScoreDisplay();
+    showScoreFlash(pts, word);
+    addFoundWord(word);
+    
+    wd.className = 'valid';
+    
+    const catReactions = ["😺 MOCHKIL APPROVES", "😸 AZUL IS IMPRESSED", "🐾 PURRFECT WORD", "✨ REALITY SYNCED", "🌀 CHAOS ACCEPTED", "💜 CAT APPROVED"];
+    setStatus(catReactions[Math.floor(Math.random() * catReactions.length)] + " +" + pts);
+    
+    if (word.length >= 6) {
+      document.body.classList.add('glitching');
+      setTimeout(() => document.body.classList.remove('glitching'), 400);
+    }
+    
+    document.getElementById('found-count').textContent = foundWords.size;
+    
+    // Check round complete
+    const needed = ROUND_WORDS_NEEDED[Math.min(round - 1, ROUND_WORDS_NEEDED.length - 1)];
+    if (foundWords.size >= needed) {
+      setTimeout(() => showRoundComplete(), 600);
+    }
+  } else {
+    setStatus("NOT A WORD — MOCHKIL JUDGED YOU");
+    wd.className = 'invalid';
+    setTimeout(() => { wd.className = ''; }, 500);
+  }
+  
+  selected = [];
+  setTimeout(updateSelectionUI, 100);
+}
+
+function calcPoints(word) {
+  const len = word.length;
+  if (len === 3) return 1;
+  if (len === 4) return 2;
+  if (len === 5) return 4;
+  if (len === 6) return 7;
+  if (len === 7) return 12;
+  return 20; // 8+
+}
+
+function shakeWordDisplay() {
+  const wd = document.getElementById('word-display');
+  wd.className = 'invalid';
+  setTimeout(() => { wd.className = ''; }, 400);
+}
+
+// ── FOUND WORDS UI ───────────────────────────────────────────────────────
+function addFoundWord(word) {
+  const container = document.getElementById('found-words');
+  const span = document.createElement('span');
+  span.className = 'found-word found-' + (word.length >= 6 ? '6plus' : word.length);
+  span.textContent = word.toUpperCase();
+  container.appendChild(span);
+}
+
+// ── SCORE FLASH ──────────────────────────────────────────────────────────
+function showScoreFlash(pts, word) {
+  const flash = document.createElement('div');
+  flash.className = 'score-flash';
+  flash.style.color = pts >= 7 ? '#00ff88' : pts >= 4 ? '#ffff00' : '#00ffff';
+  flash.style.left = (Math.random() * 60 + 20) + '%';
+  flash.style.top = '40%';
+  flash.textContent = '+' + pts + (pts >= 7 ? ' 🔥' : '');
+  document.body.appendChild(flash);
+  setTimeout(() => flash.remove(), 1000);
+}
+
+// ── SCORE DISPLAY ────────────────────────────────────────────────────────
+function updateScoreDisplay() {
+  document.getElementById('score-disp').textContent = score;
+  if (score > highScore) {
+    highScore = score;
+    localStorage.setItem('wordchaos_hs', highScore);
+    document.getElementById('best-disp').textContent = highScore;
+  }
+}
+
+// ── TIMER ────────────────────────────────────────────────────────────────
+function startTimer() {
+  clearInterval(timerInterval);
+  timeLeft = ROUND_TIME[Math.min(round - 1, ROUND_TIME.length - 1)];
+  updateTimerBar();
+  
+  timerInterval = setInterval(() => {
+    timeLeft--;
+    updateTimerBar();
+    if (timeLeft <= 0) {
+      clearInterval(timerInterval);
+      triggerTimeOut();
+    }
+  }, 1000);
+}
+
+function updateTimerBar() {
+  const maxTime = ROUND_TIME[Math.min(round - 1, ROUND_TIME.length - 1)];
+  const pct = (timeLeft / maxTime) * 100;
+  const bar = document.getElementById('timer-bar');
+  bar.style.width = pct + '%';
+  bar.className = pct < 25 ? 'danger' : '';
+}
+
+function triggerTimeOut() {
+  gameOver = true;
+  clearInterval(timerInterval);
+  showOverlay(false);
+}
+
+// ── SHUFFLE ──────────────────────────────────────────────────────────────
+function shuffleBoard() {
+  for (let i = letters.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [letters[i], letters[j]] = [letters[j], letters[i]];
+  }
+  selected = [];
+  renderGrid();
+  updateSelectionUI();
+  setStatus("CHAOS RESHUFFLED — MOCHKIL APPROVES");
+}
+
+// ── ROUND / GAME FLOW ────────────────────────────────────────────────────
+function showRoundComplete() {
+  clearInterval(timerInterval);
+  showOverlay(true);
+}
+
+function showOverlay(win) {
+  const overlay = document.getElementById('overlay');
+  const title = document.getElementById('overlay-title');
+  const scoreEl = document.getElementById('overlay-score');
+  const wordsEl = document.getElementById('overlay-words');
+  const catEl = document.querySelector('#overlay .overlay-cat') || document.getElementById('overlay').querySelector(':first-child');
+  const btn = document.getElementById('overlay-btn');
+  
+  if (win) {
+    title.textContent = 'ROUND ' + round + ' CLEARED!';
+    title.style.color = '#00ff88';
+    title.style.textShadow = '0 0 20px #00ff88, 0 0 60px #00ff88';
+    document.querySelector('#overlay-cat') ? null : null;
+    document.getElementById('overlay').querySelector('div:first-child').textContent = round >= 5 ? '🏆' : '😸';
+    if (round >= 5) {
+      title.textContent = 'MAXIMUM REALITY ACHIEVED!';
+      btn.textContent = 'PLAY AGAIN';
+      btn.onclick = restartGame;
+    } else {
+      btn.textContent = 'NEXT ROUND →';
+      btn.onclick = nextRound;
+    }
+  } else {
+    title.textContent = 'TIME\'S UP!';
+    title.style.color = '#ff4444';
+    title.style.textShadow = '0 0 20px #ff4444';
+    document.getElementById('overlay').querySelector('div:first-child').textContent = '😿';
+    btn.textContent = 'TRY AGAIN';
+    btn.onclick = restartGame;
+  }
+  
+  scoreEl.textContent = 'SCORE: ' + score + '  |  ROUND: ' + round;
+  wordsEl.textContent = 'WORDS FOUND: ' + Array.from(foundWords).join(', ');
+  overlay.classList.add('active');
+}
+
+function nextRound() {
+  round++;
+  foundWords = new Set();
+  selected = [];
+  gameOver = false;
+  document.getElementById('overlay').classList.remove('active');
+  document.getElementById('found-words').innerHTML = '';
+  document.getElementById('found-count').textContent = '0';
+  document.getElementById('round-num').textContent = round;
+  document.getElementById('words-needed').textContent = ROUND_WORDS_NEEDED[Math.min(round - 1, ROUND_WORDS_NEEDED.length - 1)];
+  generateBoard();
+  renderGrid();
+  updateSelectionUI();
+  setStatus("ROUND " + round + " — FIND " + ROUND_WORDS_NEEDED[Math.min(round - 1, ROUND_WORDS_NEEDED.length - 1)] + " WORDS");
+  startTimer();
+}
+
+function restartGame() {
+  round = 1;
+  score = 0;
+  foundWords = new Set();
+  selected = [];
+  gameOver = false;
+  document.getElementById('overlay').classList.remove('active');
+  document.getElementById('found-words').innerHTML = '';
+  document.getElementById('found-count').textContent = '0';
+  document.getElementById('score-disp').textContent = '0';
+  document.getElementById('round-num').textContent = '1';
+  document.getElementById('words-needed').textContent = ROUND_WORDS_NEEDED[0];
+  generateBoard();
+  renderGrid();
+  updateSelectionUI();
+  setStatus("SELECT ADJACENT LETTERS TO BUILD WORDS");
+  startTimer();
+}
+
+// ── STATUS ────────────────────────────────────────────────────────────────
+let statusTimeout;
+function setStatus(msg) {
+  const el = document.getElementById('status-msg');
+  el.textContent = msg;
+  clearTimeout(statusTimeout);
+  statusTimeout = setTimeout(() => {
+    el.textContent = "SELECT ADJACENT LETTERS TO BUILD WORDS";
+  }, 3000);
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────
+document.getElementById('best-disp').textContent = highScore;
+document.getElementById('words-needed').textContent = ROUND_WORDS_NEEDED[0];
+
+generateBoard();
+renderGrid();
+startTimer();
+</script>
+</body>
+</html>
