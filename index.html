@@ -938,10 +938,29 @@ document.getElementById('best-disp').textContent = highScore;
 document.getElementById('words-needed').textContent = ROUND_WORDS_NEEDED[0];
 document.getElementById('status-msg').textContent = "LOADING DICTIONARY...";
 
-fetch('dictionary.json')
+function expandWords(words) {
+  const result = new Set();
+
+  words.forEach(word => {
+    word = word.toLowerCase().trim();
+    result.add(word);
+
+    if (word.length > 2) {
+      result.add(word + "s");
+      result.add(word + "ed");
+      result.add(word + "ing");
+    }
+  });
+
+  return Array.from(result);
+}
+  fetch('dictionary.json')
   .then(r => r.json())
   .then(dict => {
-    WORD_LIST = new Set(Object.values(dict.categories).flat().map(w => w.toLowerCase()));
+    const baseWords = Object.values(dict.categories).flat();
+const expandedWords = expandWords(baseWords);
+
+WORD_LIST = new Set(expandedWords);
     console.log(`Dictionary loaded: ${WORD_LIST.size} words`);
     document.getElementById('status-msg').textContent = "SELECT ADJACENT LETTERS TO BUILD WORDS";
     generateBoard();
