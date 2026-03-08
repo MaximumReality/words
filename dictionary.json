@@ -4,7 +4,7 @@
     "version": "1.5",
     "author": "Lori @ MaximumReality.xyz",
     "description": "Word list for Maximum Reality word games. Add your own words anytime!",
-    "total": 2431
+    "total": 2433
   },
   "categories": {
     "cats": [
@@ -511,6 +511,7 @@
       "char",
       "chop",
       "cite",
+      "coma",
       "colt",
       "cone",
       "cope",
@@ -605,6 +606,7 @@
       "teal",
       "teat",
       "thud",
+      "tuna",
       "tusk",
       "urge",
       "weld",
