@@ -4,7 +4,7 @@
     "version": "1.5",
     "author": "Lori @ MaximumReality.xyz",
     "description": "Word list for Maximum Reality word games. Add your own words anytime!",
-    "total": 2440
+    "total": 2441
   },
   "categories": {
     "cats": [
@@ -549,6 +549,7 @@
       "gush",
       "gyro",
       "hath",
+      "hilt",
       "hive",
       "hush",
       "jazz",
