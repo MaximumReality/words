@@ -4,7 +4,7 @@
     "version": "1.5",
     "author": "Lori @ MaximumReality.xyz",
     "description": "Word list for Maximum Reality word games. Add your own words anytime!",
-    "total": 2424
+    "total": 2425
   },
   "categories": {
     "cats": [
@@ -1352,6 +1352,7 @@
       "chime",
       "chomp",
       "chord",
+      "chore",
       "churn",
       "cider",
       "clank",
