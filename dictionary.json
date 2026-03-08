@@ -4,7 +4,7 @@
     "version": "1.5",
     "author": "Lori @ MaximumReality.xyz",
     "description": "Word list for Maximum Reality word games. Add your own words anytime!",
-    "total": 2442
+    "total": 2444
   },
   "categories": {
     "cats": [
@@ -513,6 +513,7 @@
       "cell",
       "chap",
       "char",
+      "chin",
       "chop",
       "cite",
       "coat",
@@ -590,6 +591,7 @@
       "quip",
       "quiz",
       "raze",
+      "real",
       "rung",
       "rust",
       "salt",
