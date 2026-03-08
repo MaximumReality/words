@@ -495,7 +495,7 @@ let WORD_LIST = new Set();
 // ── GAME STATE ───────────────────────────────────────────────────────────
 const GRID_SIZE = 4;
 const ROUND_WORDS_NEEDED = [5, 6, 7, 8, 9];
-const ROUND_TIME = [90, 80, 70, 60, 50]; // seconds per round
+const BASE_TIME = 90; // seconds per round
 
 let letters = [];
 let selected = [];
@@ -506,6 +506,14 @@ let round = 1;
 let timerInterval = null;
 let timeLeft = 0;
 let gameOver = false;
+
+  function startRound() {
+    // Other setup logic...
+    timeLeft = BASE_TIME; // This sets the clock to 90 every time
+    updateTimerDisplay(); 
+    // Start interval logic...
+}
+
 
 // Weighted letter distribution (more vowels, common consonants)
 const LETTER_POOL = "AAAAAAAAABBBCCCDDDDEEEEEEEEEEFFFGGGHHHIIIIIIIIJKLLLLMMMNNNNNNOOOOOOOOPPPPQRRRRRRSSSSTTTTTTTUUUUVVWWXYYZ";
