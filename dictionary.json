@@ -4,7 +4,7 @@
     "version": "1.5",
     "author": "Lori @ MaximumReality.xyz",
     "description": "Word list for Maximum Reality word games. Add your own words anytime!",
-    "total": 2448
+    "total": 2453
   },
   "categories": {
     "cats": [
@@ -198,6 +198,8 @@
       "car",
       "far",
       "jar",
+      "jet",
+      "jut",
       "tar",
       "war",
       "eat",
@@ -361,7 +363,6 @@
       "jab",
       "jam",
       "jaw",
-      "jet",
       "job",
       "jog",
       "jot",
@@ -403,6 +404,7 @@
       "paw",
       "pay",
       "pea",
+      "pee",
       "per",
       "phi",
       "ply",
@@ -435,8 +437,10 @@
       "sap",
       "saw",
       "sea",
+      "sec",
       "set",
       "sew",
+      "sex",
       "sic",
       "sky",
       "sly",
