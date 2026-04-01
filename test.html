@@ -1000,63 +1000,19 @@ body::after {
 <script type="module">
 import { WORD_LIST, THEMES } from './words.js';
 
-
 // ══════════════════════════════════════════════════════════════
-// LETTER FREQUENCY + POINT VALUES
+// CONSTANTS & CONFIG
 // ══════════════════════════════════════════════════════════════
 const LETTERS = "AAABBBCCCDDDEEEFFFGGGHHIIIIJJKKLLLLMMMNNNOOOOPPPQRRRRRSSSSTTTTTUUUVVWWXYYZ";
-
 const LETTER_PTS = {
   A:1,E:1,I:1,O:1,U:1,N:1,R:1,S:1,T:1,L:1,
-  D:2,G:2,
-  B:3,C:3,M:3,P:3,
-  F:4,H:4,V:4,W:4,Y:4,
-  K:5,
-  J:8,X:8,
-  Q:10,Z:10
+  D:2,G:2,B:3,C:3,M:3,P:3,F:4,H:4,V:4,W:4,Y:4,
+  K:5,J:8,X:8,Q:10,Z:10
 };
 
-// ══════════════════════════════════════════════════════════════
-// VOID WALKER LINES
-// ══════════════════════════════════════════════════════════════
-const VOID_IDLE = [
-  "SCANNING FOR SIGNAL...",
-  "THE LETTERS KNOW WHERE THEY WANT TO GO.",
-  "ENTROPY INCREASES. SO DOES YOUR SCORE.",
-  "NOT ALL WORDS ARE VISIBLE TO THE NAKED EYE.",
-  "PATTERN RECOGNITION: ONLINE.",
-  "THE VOID WAITS. DOES IT HAVE WORDS? YES.",
-  "GLITCH IN THE LEXICON. PROCEED.",
-  "NEURAL NET: HUMMING.",
-  "FIND THE HIDDEN SIGNAL.",
-  "EVERY LETTER IS A CLUE.",
-];
-
-const VOID_BONUS = [
-  "ANOMALY DETECTED. BONUS LOCKED IN.",
-  "THE THEME BLEEDS THROUGH.",
-  "SIGNAL CONFIRMED. EXTRA CYCLES GRANTED.",
-  "PATTERN MATCH. MAXIMUM REALITY APPROVES.",
-  "VOID ACKNOWLEDGES YOUR DISCOVERY.",
-  "THEMATIC RESONANCE. NICE.",
-  "YOU SEE WHAT OTHERS CANNOT.",
-];
-
-const VOID_GOOD = [
-  "WORD ACCEPTED. MOVING ON.",
-  "LEXICON UPDATED.",
-  "SIGNAL RECEIVED.",
-  "NICE. KEEP GOING.",
-  "THE MATRIX APPROVES.",
-  "THAT ONE COST SOMETHING.",
-];
-
-const VOID_SHUFFLE = [
-  "TILES REARRANGED. NEW ANGLES REVEALED.",
-  "REALITY SHUFFLED. PROCEED.",
-  "GLITCH PATTERN RELOADED.",
-  "NEW CONFIGURATION. NEW POSSIBILITIES.",
-];
+const VOID_IDLE = ["SCANNING FOR SIGNAL...","ENTROPY INCREASES.","PATTERN RECOGNITION: ONLINE.","FIND THE HIDDEN SIGNAL."];
+const VOID_GOOD = ["WORD ACCEPTED.","SIGNAL RECEIVED.","THE MATRIX APPROVES."];
+const VOID_SHUFFLE = ["TILES REARRANGED.","REALITY SHUFFLED.","GLITCH PATTERN RELOADED."];
 
 // ══════════════════════════════════════════════════════════════
 // GAME STATE
@@ -1074,147 +1030,105 @@ let state = {
   theme: null,
   bonusWordsFound: [],
   discardMarked: [],
-  discardMode: false,
   gameActive: false,
 };
 
 // ══════════════════════════════════════════════════════════════
-// SCREEN MANAGEMENT
+// CORE ENGINE FUNCTIONS
 // ══════════════════════════════════════════════════════════════
+
 function showScreen(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById('screen-' + id).classList.add('active');
 }
 
-// ══════════════════════════════════════════════════════════════
-// TILE GENERATION
-// ══════════════════════════════════════════════════════════════
+function setVoid(text) {
+  const el = document.getElementById('void-text');
+  if (el) {
+    el.textContent = text;
+    el.style.animation = 'none';
+    el.offsetHeight; 
+    el.style.animation = '';
+  }
+}
+
 function generateTiles(count) {
   const tiles = [];
-  // ensure some vowels
   const vowels = ['A','E','I','O','U'];
   const numVowels = Math.max(2, Math.floor(count * 0.35));
-  for (let i = 0; i < numVowels; i++) {
-    tiles.push(vowels[Math.floor(Math.random() * vowels.length)]);
-  }
-  while (tiles.length < count) {
-    tiles.push(LETTERS[Math.floor(Math.random() * LETTERS.length)]);
-  }
+  for (let i = 0; i < numVowels; i++) tiles.push(vowels[Math.floor(Math.random() * vowels.length)]);
+  while (tiles.length < count) tiles.push(LETTERS[Math.floor(Math.random() * LETTERS.length)]);
   return tiles.sort(() => Math.random() - 0.5);
 }
 
-function pickTheme() {
-  return THEMES[Math.floor(Math.random() * THEMES.length)];
-}
+// ══════════════════════════════════════════════════════════════
+// GAME FLOW
+// ══════════════════════════════════════════════════════════════
 
-// ══════════════════════════════════════════════════════════════
-// START GAME
-// ══════════════════════════════════════════════════════════════
-function startGame() {
+window.startGame = function() {
   clearInterval(state.timerInterval);
-  const tileCount = 8 + Math.floor(Math.random() * 3); // 8-10
+  const tileCount = 8 + Math.floor(Math.random() * 3);
   state = {
+    ...state,
     tiles: generateTiles(tileCount),
     selectedIndices: [],
     foundWords: [],
     score: 0,
-    level: 1,
     shufflesLeft: 3,
     timeLeft: 90,
-    timerInterval: null,
-    maxTime: 90,
-    theme: pickTheme(),
+    theme: THEMES[Math.floor(Math.random() * THEMES.length)],
     bonusWordsFound: [],
     discardMarked: [],
-    discardMode: false,
     gameActive: false,
   };
   showDiscardScreen();
-}
+};
 
-// ══════════════════════════════════════════════════════════════
-// DISCARD SCREEN
-// ══════════════════════════════════════════════════════════════
 function showDiscardScreen() {
   const container = document.getElementById('discard-tiles');
   container.innerHTML = '';
-  state.discardMarked = [];
-
   state.tiles.forEach((letter, i) => {
     const tile = document.createElement('div');
     tile.className = 'discard-tile';
     tile.textContent = letter;
-    tile.style.animationDelay = (i * 0.05) + 's';
-    tile.addEventListener('click', () => toggleDiscardMark(i, tile));
+    tile.onclick = () => {
+      const pos = state.discardMarked.indexOf(i);
+      if (pos === -1 && state.discardMarked.length < 2) {
+        state.discardMarked.push(i);
+        tile.classList.add('marked');
+      } else if (pos !== -1) {
+        state.discardMarked.splice(pos, 1);
+        tile.classList.remove('marked');
+      }
+      updateDiscardInfo();
+    };
     container.appendChild(tile);
   });
-
   updateDiscardInfo();
   showScreen('discard');
 }
 
-function toggleDiscardMark(index, el) {
-  const pos = state.discardMarked.indexOf(index);
-  if (pos === -1) {
-    if (state.discardMarked.length >= 2) return;
-    state.discardMarked.push(index);
-    el.classList.add('marked');
-  } else {
-    state.discardMarked.splice(pos, 1);
-    el.classList.remove('marked');
-  }
-  updateDiscardInfo();
-}
-
 function updateDiscardInfo() {
   const n = state.discardMarked.length;
-  document.getElementById('discard-info').textContent =
-    n === 0 ? 'SELECT TILES TO DISCARD (0/2)' :
-    n === 1 ? '1 TILE MARKED — SELECT 1 MORE OR PROCEED' :
-    '2 TILES MARKED — READY TO COMMIT';
+  document.getElementById('discard-info').textContent = `SELECTED (${n}/2)`;
 }
 
-function confirmDiscard() {
-  // Replace marked tiles
-  const newTiles = [...state.tiles];
+window.confirmDiscard = function() {
   state.discardMarked.forEach(i => {
-    let newLetter;
-    do { newLetter = LETTERS[Math.floor(Math.random() * LETTERS.length)]; }
-    while (newLetter === state.tiles[i]);
-    newTiles[i] = newLetter;
+    state.tiles[i] = LETTERS[Math.floor(Math.random() * LETTERS.length)];
   });
-  state.tiles = newTiles;
   initGameScreen();
-}
+};
 
-// ══════════════════════════════════════════════════════════════
-// GAME SCREEN
-// ══════════════════════════════════════════════════════════════
 function initGameScreen() {
   state.gameActive = true;
-  state.selectedIndices = [];
-
   document.getElementById('hud-score').textContent = '0';
   document.getElementById('hud-words').textContent = '0';
-  document.getElementById('level-badge').textContent = `LEVEL 0${state.level} // THEME HIDDEN`;
   document.getElementById('found-words').innerHTML = '';
-  document.getElementById('word-display').textContent = '_';
-  document.getElementById('word-display').className = 'word-display';
-  document.getElementById('btn-submit').disabled = true;
-
-  // discard button — not available in game phase
-  document.getElementById('btn-discard-mode').disabled = true;
-  document.getElementById('discard-count').textContent = 'PRE-GAME ONLY';
-
-  updateShuffleBtn();
   renderTiles();
-  updateTimerBar();
-  setVoid("ROUND INITIALIZED. FIND THE SIGNAL.");
-
-  showScreen('game');
-
-  // Start timer
   state.timerInterval = setInterval(tickTimer, 1000);
+  showScreen('game');
+  setVoid("ROUND INITIALIZED. FIND THE SIGNAL.");
 }
 
 function renderTiles() {
@@ -1222,103 +1136,42 @@ function renderTiles() {
   area.innerHTML = '';
   state.tiles.forEach((letter, i) => {
     const tile = document.createElement('div');
-    tile.className = 'tile';
+    tile.className = 'tile' + (state.selectedIndices.includes(i) ? ' selected' : '');
     tile.textContent = letter;
-    tile.dataset.pts = LETTER_PTS[letter] || 1;
-    tile.dataset.index = i;
-    tile.style.animationDelay = (i * 0.04) + 's';
-
-    if (state.selectedIndices.includes(i)) tile.classList.add('selected');
-
-    tile.addEventListener('click', () => toggleTile(i));
+    tile.onclick = () => {
+      const pos = state.selectedIndices.indexOf(i);
+      if (pos === -1) state.selectedIndices.push(i);
+      else state.selectedIndices.splice(pos, 1);
+      updateWordDisplay();
+      renderTiles();
+    };
     area.appendChild(tile);
   });
-}
-
-function toggleTile(index) {
-  if (!state.gameActive) return;
-
-  const pos = state.selectedIndices.indexOf(index);
-  if (pos === -1) {
-    state.selectedIndices.push(index);
-  } else {
-    state.selectedIndices.splice(pos, 1);
-  }
-  updateWordDisplay();
-  renderTiles();
 }
 
 function updateWordDisplay() {
   const word = state.selectedIndices.map(i => state.tiles[i]).join('');
   const display = document.getElementById('word-display');
-  const submitBtn = document.getElementById('btn-submit');
-
-  if (word.length === 0) {
-    display.textContent = '_';
-    display.className = 'word-display';
-    submitBtn.disabled = true;
-    return;
-  }
-
-  display.textContent = word;
-
+  const btn = document.getElementById('btn-submit');
+  display.textContent = word || '_';
+  
   if (word.length >= 3) {
     const isValid = WORD_LIST.has(word.toLowerCase()) && !state.foundWords.includes(word.toLowerCase());
-    display.className = 'word-display ' + (isValid ? 'valid' : 'invalid');
-    submitBtn.disabled = !isValid;
-
-    // Trigger the shake if it's a "Glitch" (invalid word)
-    if (!isValid) {
-      display.classList.add('shake');
-      setTimeout(() => display.classList.remove('shake'), 200);
-    }
+    display.className = 'word-display' + (isValid ? ' valid' : ' invalid');
+    btn.disabled = !isValid;
   } else {
     display.className = 'word-display';
-    submitBtn.disabled = true;
+    btn.disabled = true;
   }
 }
-  state.score += pts;
-  showScoreFlash('+' + pts);
 
-  // Add to found words UI
-  addFoundWord(word, pts, isBonus);
-
-  document.getElementById('hud-score').textContent = state.score;
-  document.getElementById('hud-words').textContent = state.foundWords.length;
-
-  // ── THE REPLACEMENT ENGINE ──
-  // Loop through selected indices and swap them for new letters
-  state.selectedIndices.forEach(index => {
-    state.tiles[index] = LETTERS[Math.floor(Math.random() * LETTERS.length)];
-  });
-
-  // Clear selection and redraw the board
-  state.selectedIndices = [];
-  updateWordDisplay();
-  renderTiles();
-
-  // Score glitch effect
-  document.getElementById('hud-score').classList.add('glitch-anim');
-  setTimeout(() => document.getElementById('hud-score').classList.remove('glitch-anim'), 400);
-}
-
-
-function clearWord() {
-  state.selectedIndices = [];
-  updateWordDisplay();
-  renderTiles();
-}
-
-function submitWord() {
+window.submitWord = function() {
   const word = state.selectedIndices.map(i => state.tiles[i]).join('').toLowerCase();
-  
-  if (word.length < 3 || !WORD_LIST.has(word) || state.foundWords.includes(word)) return;
+  if (word.length < 3 || !WORD_LIST.has(word)) return;
 
   state.foundWords.push(word);
-
-  const letterScore = state.selectedIndices.reduce((sum, i) => sum + (LETTER_PTS[state.tiles[i]] || 1), 0);
-  let pts = letterScore + (word.length >= 6 ? word.length * 2 : word.length >= 5 ? word.length : 0);
-
+  let pts = state.selectedIndices.reduce((sum, i) => sum + (LETTER_PTS[state.tiles[i]] || 1), 0);
+  
   const isBonus = state.theme.words.includes(word);
   if (isBonus) {
     pts *= 2;
@@ -1329,181 +1182,75 @@ function submitWord() {
   state.score += pts;
   addFoundWord(word, pts, isBonus);
   
-  document.getElementById('hud-score').textContent = state.score;
-  document.getElementById('hud-words').textContent = state.foundWords.length;
-
-  // REPLACEMENT ENGINE: Swap used letters for new ones
-  state.selectedIndices.forEach(index => {
-    state.tiles[index] = LETTERS[Math.floor(Math.random() * LETTERS.length)];
+  // Replace tiles
+  state.selectedIndices.forEach(i => {
+    state.tiles[i] = LETTERS[Math.floor(Math.random() * LETTERS.length)];
   });
 
   state.selectedIndices = [];
+  document.getElementById('hud-score').textContent = state.score;
+  document.getElementById('hud-words').textContent = state.foundWords.length;
   updateWordDisplay();
   renderTiles();
+  setVoid(VOID_GOOD[Math.floor(Math.random() * VOID_GOOD.length)]);
+};
 
-  const scoreEl = document.getElementById('hud-score');
-  scoreEl.classList.add('glitch-anim');
-  setTimeout(() => scoreEl.classList.remove('glitch-anim'), 400);
-}
-
-  function addFoundWord(word, pts, isBonus) {
-  const container = document.getElementById('found-words');
+function addFoundWord(word, pts, isBonus) {
   const el = document.createElement('div');
   el.className = 'found-word' + (isBonus ? ' bonus' : '');
   el.innerHTML = `${word.toUpperCase()} <span class="word-pts">${pts}</span>`;
-  container.prepend(el);
+  document.getElementById('found-words').prepend(el);
 }
-// ══════════════════════════════════════════════════════════════
-// SHUFFLE
-// ══════════════════════════════════════════════════════════════
-function shuffleTiles() {
-  if (state.shufflesLeft <= 0 || !state.gameActive) return;
-  state.shufflesLeft--;
+
+window.clearWord = function() {
   state.selectedIndices = [];
-
-  // Fisher-Yates shuffle
-  const arr = [...state.tiles];
-  for (let i = arr.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [arr[i], arr[j]] = [arr[j], arr[i]];
-  }
-  state.tiles = arr;
-
   updateWordDisplay();
   renderTiles();
-  updateShuffleBtn();
+};
+
+window.shuffleTiles = function() {
+  if (state.shufflesLeft <= 0) return;
+  state.shufflesLeft--;
+  state.tiles.sort(() => Math.random() - 0.5);
+  state.selectedIndices = [];
+  document.getElementById('shuffle-count').textContent = state.shufflesLeft + ' LEFT';
+  renderTiles();
+  updateWordDisplay();
   setVoid(VOID_SHUFFLE[Math.floor(Math.random() * VOID_SHUFFLE.length)]);
-}
+};
 
-function updateShuffleBtn() {
-  const btn = document.getElementById('btn-shuffle');
-  const count = document.getElementById('shuffle-count');
-  btn.disabled = state.shufflesLeft <= 0;
-  count.textContent = state.shufflesLeft + ' LEFT';
-}
-
-// ══════════════════════════════════════════════════════════════
-// DISCARD MODE (in-game) — disabled per design
-// ══════════════════════════════════════════════════════════════
-function toggleDiscardMode() {
-  // disabled in game — pre-game only
-}
-
-// ══════════════════════════════════════════════════════════════
-// TIMER
-// ══════════════════════════════════════════════════════════════
 function tickTimer() {
   state.timeLeft--;
-  const display = document.getElementById('hud-timer');
-  display.textContent = state.timeLeft;
-
-  const pct = state.timeLeft / state.maxTime;
-  display.className = 'hud-value timer';
-  if (pct <= 0.2) display.classList.add('danger');
-  else if (pct <= 0.4) display.classList.add('warning');
-
-  updateTimerBar();
-
-  // Random void chatter
-  if (state.timeLeft % 20 === 0 && state.timeLeft > 0) {
-    setVoid(VOID_IDLE[Math.floor(Math.random() * VOID_IDLE.length)]);
-  }
-
-  if (state.timeLeft <= 10 && state.timeLeft > 0) {
-    setVoid(`${state.timeLeft} SECONDS REMAINING. ACCELERATE.`);
-  }
-
-  if (state.timeLeft <= 0) {
-    endGame();
-  }
-}
-
-function updateTimerBar() {
+  document.getElementById('hud-timer').textContent = state.timeLeft;
   const bar = document.getElementById('timer-bar');
-  const pct = Math.max(0, state.timeLeft / state.maxTime * 100);
+  const pct = (state.timeLeft / state.maxTime) * 100;
   bar.style.width = pct + '%';
-  bar.className = 'timer-bar';
-  if (pct <= 20) bar.classList.add('danger');
-  else if (pct <= 40) bar.classList.add('warning');
+  if (state.timeLeft <= 0) endGame();
 }
 
-// ══════════════════════════════════════════════════════════════
-// END GAME
-// ══════════════════════════════════════════════════════════════
 function endGame() {
   clearInterval(state.timerInterval);
   state.gameActive = false;
-
-  // Grade
-  let grade = 'F', gradeClass = 'f';
-  if (state.score >= 200) { grade = 'S'; gradeClass = 's'; }
-  else if (state.score >= 120) { grade = 'A'; gradeClass = 'a'; }
-  else if (state.score >= 70) { grade = 'B'; gradeClass = 'b'; }
-  else if (state.score >= 30) { grade = 'C'; gradeClass = 'c'; }
-
-  document.getElementById('end-grade').textContent = grade;
-  document.getElementById('end-grade').className = 'grade ' + gradeClass;
   document.getElementById('end-score').textContent = state.score;
-
-  // Theme reveal
   document.getElementById('end-theme-name').textContent = state.theme.name;
-  const found = state.bonusWordsFound.length;
-  document.getElementById('end-theme-found').textContent =
-    found === 0 ? 'YOU FOUND 0 BONUS WORDS. THE VOID JUDGES YOU.' :
-    found === 1 ? 'YOU FOUND 1 BONUS WORD. SIGNAL DETECTED.' :
-    `YOU FOUND ${found} BONUS WORDS. IMPRESSIVE SIGNAL LOCK.`;
-
-  // Word list
   const list = document.getElementById('end-word-list');
   list.innerHTML = '';
   state.foundWords.forEach(w => {
-    const el = document.createElement('div');
-    el.className = 'end-word-item' + (state.bonusWordsFound.includes(w) ? ' bonus' : '');
-    el.textContent = w.toUpperCase();
-    list.appendChild(el);
+    const item = document.createElement('div');
+    item.className = 'end-word-item';
+    item.textContent = w.toUpperCase();
+    list.appendChild(item);
   });
-
-  if (state.foundWords.length === 0) {
-    const el = document.createElement('div');
-    el.style.color = '#334';
-    el.style.fontSize = '12px';
-    el.textContent = 'NO WORDS FOUND. THE LETTERS WEEP.';
-    list.appendChild(el);
-  }
-
-  setTimeout(() => showScreen('end'), 400);
+  showScreen('end');
 }
 
-// ══════════════════════════════════════════════════════════════
-// VOID WALKER
-// ══════════════════════════════════════════════════════════════
-function setVoid(text) {
-  const el = document.getElementById('void-text');
-  el.textContent = text;
-  el.style.animation = 'none';
-  el.offsetHeight; // reflow
-  el.style.animation = '';
-}
-
-// ══════════════════════════════════════════════════════════════
-// FLASH FX
-// ══════════════════════════════════════════════════════════════
 function showBonusFlash(word, pts) {
   const el = document.createElement('div');
   el.className = 'bonus-flash';
-  el.innerHTML = `⬡ BONUS WORD ⬡<br>${word}<span class="bonus-pts">+${pts} PTS</span>`;
+  el.innerHTML = `BONUS!<br>${word}<br>+${pts}`;
   document.body.appendChild(el);
-  setTimeout(() => el.remove(), 1300);
+  setTimeout(() => el.remove(), 1200);
 }
-
-function showScoreFlash(text) {
-  const el = document.createElement('div');
-  el.className = 'score-flash';
-  el.textContent = text;
-  document.body.appendChild(el);
-  setTimeout(() => el.remove(), 1100);
-}
-  
 
 </script>
 </body>
