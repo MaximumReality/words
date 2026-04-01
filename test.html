@@ -1404,12 +1404,10 @@ function clearWord() {
 function submitWord() {
   const word = state.selectedIndices.map(i => state.tiles[i]).join('').toLowerCase();
   
-  // Validation
   if (word.length < 3 || !WORD_LIST.has(word) || state.foundWords.includes(word)) return;
 
   state.foundWords.push(word);
 
-  // Score & Theme
   const letterScore = state.selectedIndices.reduce((sum, i) => sum + (LETTER_PTS[state.tiles[i]] || 1), 0);
   let pts = letterScore + (word.length >= 6 ? word.length * 2 : word.length >= 5 ? word.length : 0);
 
@@ -1418,35 +1416,27 @@ function submitWord() {
     pts *= 2;
     state.bonusWordsFound.push(word);
     showBonusFlash(word.toUpperCase(), pts);
-    setVoid(VOID_BONUS[Math.floor(Math.random() * VOID_BONUS.length)]);
-  } else {
-    setVoid(VOID_GOOD[Math.floor(Math.random() * VOID_GOOD.length)]);
   }
 
-  // Update State
   state.score += pts;
   addFoundWord(word, pts, isBonus);
   
   document.getElementById('hud-score').textContent = state.score;
   document.getElementById('hud-words').textContent = state.foundWords.length;
 
-  // REPLACEMENT ENGINE (The missing piece)
+  // REPLACEMENT ENGINE: Swap used letters for new ones
   state.selectedIndices.forEach(index => {
     state.tiles[index] = LETTERS[Math.floor(Math.random() * LETTERS.length)];
   });
 
-  // Reset & Redraw
   state.selectedIndices = [];
   updateWordDisplay();
   renderTiles();
 
-  // Glitch Effect
   const scoreEl = document.getElementById('hud-score');
   scoreEl.classList.add('glitch-anim');
   setTimeout(() => scoreEl.classList.remove('glitch-anim'), 400);
 }
-
-
 
 // ══════════════════════════════════════════════════════════════
 // SHUFFLE
@@ -1598,6 +1588,14 @@ function showScoreFlash(text) {
   document.body.appendChild(el);
   setTimeout(() => el.remove(), 1100);
 }
+  function addFoundWord(word, pts, isBonus) {
+  const container = document.getElementById('found-words');
+  const el = document.createElement('div');
+  el.className = 'found-word' + (isBonus ? ' bonus' : '');
+  el.innerHTML = `${word.toUpperCase()} <span class="word-pts">${pts}</span>`;
+  container.prepend(el);
+}
+
 </script>
 </body>
 </html>
