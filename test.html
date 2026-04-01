@@ -1438,6 +1438,13 @@ function submitWord() {
   setTimeout(() => scoreEl.classList.remove('glitch-anim'), 400);
 }
 
+  function addFoundWord(word, pts, isBonus) {
+  const container = document.getElementById('found-words');
+  const el = document.createElement('div');
+  el.className = 'found-word' + (isBonus ? ' bonus' : '');
+  el.innerHTML = `${word.toUpperCase()} <span class="word-pts">${pts}</span>`;
+  container.prepend(el);
+}
 // ══════════════════════════════════════════════════════════════
 // SHUFFLE
 // ══════════════════════════════════════════════════════════════
@@ -1588,13 +1595,7 @@ function showScoreFlash(text) {
   document.body.appendChild(el);
   setTimeout(() => el.remove(), 1100);
 }
-  function addFoundWord(word, pts, isBonus) {
-  const container = document.getElementById('found-words');
-  const el = document.createElement('div');
-  el.className = 'found-word' + (isBonus ? ' bonus' : '');
-  el.innerHTML = `${word.toUpperCase()} <span class="word-pts">${pts}</span>`;
-  container.prepend(el);
-}
+  
 
 </script>
 </body>
