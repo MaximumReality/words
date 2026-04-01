@@ -845,6 +845,18 @@ body::after {
   100% { transform: translateX(0); }
 }
 
+  .shake {
+  animation: shake 0.2s ease-in-out 0s 2;
+}
+
+@keyframes shake {
+  0% { margin-left: 0rem; }
+  25% { margin-left: 0.5rem; }
+  75% { margin-left: -0.5rem; }
+  100% { margin-left: 0rem; }
+}
+
+
 /* ── LEVEL BADGE ── */
 .level-badge {
   font-family: 'VT323', monospace;
@@ -1344,6 +1356,13 @@ function updateWordDisplay() {
     const isValid = WORD_LIST.has(word.toLowerCase()) && !state.foundWords.includes(word.toLowerCase());
     display.className = 'word-display ' + (isValid ? 'valid' : 'invalid');
     submitBtn.disabled = !isValid;
+
+    if (!isValid) {
+  document.getElementById('word-display').classList.add('shake');
+  setTimeout(() => document.getElementById('word-display').classList.remove('shake'), 200);
+}
+
+    
   } else {
     display.className = 'word-display';
     submitBtn.disabled = true;
@@ -1362,7 +1381,9 @@ function submitWord() {
   if (!WORD_LIST.has(word)) return;
   if (state.foundWords.includes(word)) return;
 
-  state.foundWords.push(word);
+  state.selectedIndices.forEach(index => {
+    state.tiles[index] = LETTERS[Math.floor(Math.random() * LETTERS.length)];
+  });
 
   // Score calculation
   const letterScore = state.selectedIndices.reduce((sum, i) => sum + (LETTER_PTS[state.tiles[i]] || 1), 0);
@@ -1393,6 +1414,8 @@ function submitWord() {
   state.selectedIndices = [];
   updateWordDisplay();
   renderTiles();
+}
+
 
   // Glitch effect on score
   document.getElementById('hud-score').classList.add('glitch-anim');
