@@ -1034,12 +1034,13 @@ let state = {
 };
 
 // ══════════════════════════════════════════════════════════════
-// CORE ENGINE FUNCTIONS
+// CORE UTILITIES
 // ══════════════════════════════════════════════════════════════
 
 function showScreen(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-  document.getElementById('screen-' + id).classList.add('active');
+  const el = document.getElementById('screen-' + id);
+  if (el) el.classList.add('active');
 }
 
 function setVoid(text) {
@@ -1054,93 +1055,131 @@ function setVoid(text) {
 
 function generateTiles(count) {
   const tiles = [];
-  const vowels = ['A', 'E', 'I', 'O', 'U'];
-  
-  // 1. Force at least 3 vowels for the iPhone screen
-  for (let i = 0; i < 3; i++) {
-    tiles.push(vowels[Math.floor(Math.random() * vowels.length)]);
-  }
-  
-  // 2. Fill the rest with the full alphabet
-  while (tiles.length < count) {
-    tiles.push(LETTERS[Math.floor(Math.random() * LETTERS.length)]);
-  }
-  
-  // 3. Shuffle them so the vowels aren't all at the start
+  const vowels = ['A','E','I','O','U'];
+  for (let i = 0; i < 3; i++) tiles.push(vowels[Math.floor(Math.random() * vowels.length)]);
+  while (tiles.length < count) tiles.push(LETTERS[Math.floor(Math.random() * LETTERS.length)]);
   return tiles.sort(() => Math.random() - 0.5);
 }
 
+function renderTiles() {
+  const area = document.getElementById('tiles-area');
+  if (!area) return;
+  area.innerHTML = '';
+  state.tiles.forEach((letter, i) => {
+    const tile = document.createElement('div');
+    tile.className = 'tile' + (state.selectedIndices.includes(i) ? ' selected' : '');
+    tile.textContent = letter;
+    tile.onclick = () => {
+      const pos = state.selectedIndices.indexOf(i);
+      if (pos === -1) state.selectedIndices.push(i);
+      else state.selectedIndices.splice(pos, 1);
+      updateWordDisplay();
+      renderTiles();
+    };
+    area.appendChild(tile);
+  });
+}
+
+function updateWordDisplay() {
+  const word = state.selectedIndices.map(i => state.tiles[i]).join('');
+  const display = document.getElementById('word-display');
+  const btn = document.getElementById('btn-submit');
+  if (!display) return;
+  display.textContent = word || '_';
+  
+  if (word.length >= 3) {
+    const isValid = WORD_LIST.has(word.toLowerCase()) && !state.foundWords.includes(word.toLowerCase());
+    display.className = 'word-display' + (isValid ? ' valid' : ' invalid');
+    if (btn) btn.disabled = !isValid;
+  } else {
+    display.className = 'word-display';
+    if (btn) btn.disabled = true;
+  }
+}
+
+function tickTimer() {
+  state.timeLeft--;
+  const hud = document.getElementById('hud-timer');
+  if (hud) hud.textContent = state.timeLeft;
+  const bar = document.getElementById('timer-bar');
+  if (bar) {
+    const pct = (state.timeLeft / state.maxTime) * 100;
+    bar.style.width = pct + '%';
+  }
+  if (state.timeLeft <= 0) endGame();
+}
+
+function endGame() {
+  clearInterval(state.timerInterval);
+  state.gameActive = false;
+  document.getElementById('end-score').textContent = state.score;
+  document.getElementById('end-theme-name').textContent = state.theme.name;
+  const list = document.getElementById('end-word-list');
+  list.innerHTML = '';
+  state.foundWords.forEach(w => {
+    const item = document.createElement('div');
+    item.className = 'end-word-item';
+    item.textContent = w.toUpperCase();
+    list.appendChild(item);
+  });
+  showScreen('end');
+}
+
+function showBonusFlash(word, pts) {
+  const el = document.createElement('div');
+  el.className = 'bonus-flash';
+  el.innerHTML = `BONUS!<br>${word}<br>+${pts}`;
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 1200);
+}
+
+function addFoundWord(word, pts, isBonus) {
+  const el = document.createElement('div');
+  el.className = 'found-word' + (isBonus ? ' bonus' : '');
+  el.innerHTML = `${word.toUpperCase()} <span class="word-pts">${pts}</span>`;
+  const container = document.getElementById('found-words');
+  if (container) container.prepend(el);
+}
 
 // ══════════════════════════════════════════════════════════════
-// GAME FLOW
-// ══════════════════════════════════════════════════════════════
-
-// ══════════════════════════════════════════════════════════════
-// GAME FLOW (UPDATED: NO TRADE BLOCK / INFINITE DISCARD)
+// GLOBAL ACTIONS (BUTTONS)
 // ══════════════════════════════════════════════════════════════
 
 window.startGame = function() {
-  clearInterval(state.timerInterval);
-  // Slightly more tiles for better word options
-  const tileCount = 10; 
+  if (state.timerInterval) clearInterval(state.timerInterval);
   state = {
     ...state,
-    tiles: generateTiles(tileCount),
+    tiles: generateTiles(10),
     selectedIndices: [],
     foundWords: [],
     score: 0,
-    shufflesLeft: 5, // Increased shuffles for more chaos
     timeLeft: 90,
     theme: THEMES[Math.floor(Math.random() * THEMES.length)],
-    bonusWordsFound: [],
-    discardMarked: [],
-    gameActive: true,
+    gameActive: true
   };
   
-  // Skip the discard screen and go straight to the matrix
-  initGameScreen();
-};
-
-function initGameScreen() {
-  state.gameActive = true;
   document.getElementById('hud-score').textContent = '0';
   document.getElementById('hud-words').textContent = '0';
   document.getElementById('found-words').innerHTML = '';
   
-  // Reset Timer UI
-  document.getElementById('hud-timer').textContent = state.timeLeft;
-  document.getElementById('timer-bar').style.width = '100%';
-  
   renderTiles();
-  
-  if (state.timerInterval) clearInterval(state.timerInterval);
   state.timerInterval = setInterval(tickTimer, 1000);
-  
   showScreen('game');
-  setVoid("ROUND INITIALIZED. NO LIMITS DETECTED.");
-}
-
-// ══════════════════════════════════════════════════════════════
-// ACTIONS & CONTROLS
-// ══════════════════════════════════════════════════════════════
+  setVoid("ROUND INITIALIZED. INFINITE SWAP READY.");
+};
 
 window.toggleDiscardMode = function() {
-  if (!state.gameActive) return;
-
-  if (state.selectedIndices.length === 0) {
-    setVoid("SELECT TILES TO SWAP FIRST.");
+  if (!state.gameActive || state.selectedIndices.length === 0) {
+    setVoid("SELECT TILES TO SWAP.");
     return;
   }
-
-  // INFINITE SWAP: Replace selected tiles with new ones immediately
   state.selectedIndices.forEach(i => {
     state.tiles[i] = LETTERS[Math.floor(Math.random() * LETTERS.length)];
   });
-
   state.selectedIndices = [];
   updateWordDisplay();
   renderTiles();
-  setVoid("SIGNAL REPLACED. ENTHROPY STABILIZED.");
+  setVoid("SIGNAL REPLACED.");
 };
 
 window.submitWord = function() {
@@ -1150,17 +1189,14 @@ window.submitWord = function() {
   state.foundWords.push(word);
   let pts = state.selectedIndices.reduce((sum, i) => sum + (LETTER_PTS[state.tiles[i]] || 1), 0);
   
-  const isBonus = state.theme.words.includes(word);
-  if (isBonus) {
+  if (state.theme.words.includes(word)) {
     pts *= 2;
-    state.bonusWordsFound.push(word);
     showBonusFlash(word.toUpperCase(), pts);
   }
 
   state.score += pts;
-  addFoundWord(word, pts, isBonus);
+  addFoundWord(word, pts, state.theme.words.includes(word));
   
-  // Replace used tiles
   state.selectedIndices.forEach(i => {
     state.tiles[i] = LETTERS[Math.floor(Math.random() * LETTERS.length)];
   });
@@ -1174,12 +1210,11 @@ window.submitWord = function() {
 };
 
 window.shuffleTiles = function() {
-  // Shuffling is also infinite now to keep the flow moving
   state.tiles.sort(() => Math.random() - 0.5);
   state.selectedIndices = [];
   renderTiles();
   updateWordDisplay();
-  setVoid(VOID_SHUFFLE[Math.floor(Math.random() * VOID_SHUFFLE.length)]);
+  setVoid("MATRIX SHUFFLED.");
 };
 
 window.clearWord = function() {
@@ -1188,14 +1223,6 @@ window.clearWord = function() {
   renderTiles();
 };
 
-// ══════════════════════════════════════════════════════════════
-// EXPOSE TO WINDOW (The "Initialize" Fix)
-// ══════════════════════════════════════════════════════════════
-window.startGame = startGame;
-window.submitWord = submitWord;
-window.clearWord = clearWord;
-window.shuffleTiles = shuffleTiles;
-window.toggleDiscardMode = toggleDiscardMode;
 </script>
 </body>
 </html>
