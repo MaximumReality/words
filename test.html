@@ -1252,6 +1252,19 @@ function showBonusFlash(word, pts) {
   setTimeout(() => el.remove(), 1200);
 }
 
+
+  // ══════════════════════════════════════════════════════════════
+// EXPOSE TO GLOBAL (Fixes "Initialize" Button)
+// ══════════════════════════════════════════════════════════════
+window.startGame = startGame;
+window.confirmDiscard = confirmDiscard;
+window.submitWord = submitWord;
+window.clearWord = clearWord;
+window.shuffleTiles = shuffleTiles;
+window.toggleDiscardMode = function() {
+    alert("Discard Mode: Select a tile to swap.");
+};
+
 </script>
 </body>
 </html>
