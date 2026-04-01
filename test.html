@@ -1369,6 +1369,30 @@ function updateWordDisplay() {
     submitBtn.disabled = true;
   }
 }
+  state.score += pts;
+  showScoreFlash('+' + pts);
+
+  // Add to found words UI
+  addFoundWord(word, pts, isBonus);
+
+  document.getElementById('hud-score').textContent = state.score;
+  document.getElementById('hud-words').textContent = state.foundWords.length;
+
+  // ── THE REPLACEMENT ENGINE ──
+  // Loop through selected indices and swap them for new letters
+  state.selectedIndices.forEach(index => {
+    state.tiles[index] = LETTERS[Math.floor(Math.random() * LETTERS.length)];
+  });
+
+  // Clear selection and redraw the board
+  state.selectedIndices = [];
+  updateWordDisplay();
+  renderTiles();
+
+  // Score glitch effect
+  document.getElementById('hud-score').classList.add('glitch-anim');
+  setTimeout(() => document.getElementById('hud-score').classList.remove('glitch-anim'), 400);
+}
 
 
 function clearWord() {
@@ -1379,18 +1403,18 @@ function clearWord() {
 
 function submitWord() {
   const word = state.selectedIndices.map(i => state.tiles[i]).join('').toLowerCase();
-  if (word.length < 3) return;
-  if (!WORD_LIST.has(word)) return;
-  if (state.foundWords.includes(word)) return;
+  
+  // 1. Validation Gates
+  if (word.length < 3 || !WORD_LIST.has(word) || state.foundWords.includes(word)) return;
 
   state.foundWords.push(word);
 
-  // Score calculation
+  // 2. Score Calculation
   const letterScore = state.selectedIndices.reduce((sum, i) => sum + (LETTER_PTS[state.tiles[i]] || 1), 0);
   const lengthBonus = word.length >= 6 ? word.length * 2 : word.length >= 5 ? word.length : 0;
   let pts = letterScore + lengthBonus;
 
-  // Bonus theme check
+  // 3. Theme/Void Logic
   const isBonus = state.theme.words.includes(word);
   if (isBonus) {
     pts *= 2;
@@ -1401,32 +1425,29 @@ function submitWord() {
     setVoid(VOID_GOOD[Math.floor(Math.random() * VOID_GOOD.length)]);
   }
 
+  // 4. Update Stats
   state.score += pts;
   showScoreFlash('+' + pts);
-
-  // Add to found words UI
   addFoundWord(word, pts, isBonus);
-
+  
   document.getElementById('hud-score').textContent = state.score;
   document.getElementById('hud-words').textContent = state.foundWords.length;
 
-  // Clear selection
+  // 5. THE FIX: Replace Used Tiles with New Random Letters
+  state.selectedIndices.forEach(index => {
+    state.tiles[index] = LETTERS[Math.floor(Math.random() * LETTERS.length)];
+  });
+
+  // 6. Reset UI
   state.selectedIndices = [];
   updateWordDisplay();
   renderTiles();
 
-  // Glitch effect on score
+  // 7. Visual Polish
   document.getElementById('hud-score').classList.add('glitch-anim');
   setTimeout(() => document.getElementById('hud-score').classList.remove('glitch-anim'), 400);
 }
 
-function addFoundWord(word, pts, isBonus) {
-  const container = document.getElementById('found-words');
-  const el = document.createElement('div');
-  el.className = 'found-word' + (isBonus ? ' bonus' : '');
-  el.innerHTML = word.toUpperCase() + `<span class="word-pts">+${pts}</span>`;
-  container.prepend(el);
-}
 
 // ══════════════════════════════════════════════════════════════
 // SHUFFLE
