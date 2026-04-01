@@ -1,0 +1,1525 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>LETTER CASCADE // MAXIMUM REALITY</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&family=VT323&display=swap');
+
+:root {
+  --bg: #050508;
+  --bg2: #0a0a12;
+  --panel: #0d0d18;
+  --border: #1a1a2e;
+  --cyan: #00f5ff;
+  --magenta: #ff00aa;
+  --green: #00ff88;
+  --yellow: #ffee00;
+  --red: #ff3333;
+  --orange: #ff8800;
+  --dim: #334;
+  --text: #c8d0e0;
+  --tile-bg: #111122;
+  --tile-border: #2a2a44;
+  --tile-glow: #00f5ff33;
+  --scan-color: rgba(0,245,255,0.03);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Share Tech Mono', monospace;
+  min-height: 100vh;
+  overflow-x: hidden;
+  position: relative;
+}
+
+/* scanlines */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    var(--scan-color) 2px,
+    var(--scan-color) 4px
+  );
+  pointer-events: none;
+  z-index: 1000;
+}
+
+/* CRT vignette */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(ellipse at center, transparent 60%, #000 100%);
+  pointer-events: none;
+  z-index: 999;
+}
+
+/* ── SCREENS ── */
+.screen { display: none; flex-direction: column; align-items: center; min-height: 100vh; padding: 20px 16px 40px; }
+.screen.active { display: flex; }
+
+/* ── HEADER ── */
+.game-header {
+  text-align: center;
+  margin-bottom: 16px;
+  width: 100%;
+}
+
+.logo {
+  font-family: 'Orbitron', sans-serif;
+  font-size: clamp(22px, 6vw, 32px);
+  font-weight: 900;
+  color: var(--cyan);
+  letter-spacing: 4px;
+  text-shadow: 0 0 20px var(--cyan), 0 0 40px var(--cyan);
+  animation: flicker 6s infinite;
+}
+
+.logo span { color: var(--magenta); }
+
+.sub {
+  font-family: 'VT323', monospace;
+  font-size: 14px;
+  color: var(--magenta);
+  letter-spacing: 3px;
+  opacity: 0.7;
+  margin-top: 2px;
+}
+
+@keyframes flicker {
+  0%,95%,100% { opacity: 1; }
+  96% { opacity: 0.7; }
+  97% { opacity: 1; }
+  98% { opacity: 0.4; }
+  99% { opacity: 1; }
+}
+
+/* ── HUD ── */
+.hud {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  max-width: 480px;
+  margin-bottom: 12px;
+  gap: 8px;
+}
+
+.hud-box {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  padding: 6px 10px;
+  flex: 1;
+  text-align: center;
+  position: relative;
+  clip-path: polygon(4px 0, 100% 0, calc(100% - 4px) 100%, 0 100%);
+}
+
+.hud-label {
+  font-size: 9px;
+  color: var(--dim);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+.hud-value {
+  font-family: 'Orbitron', sans-serif;
+  font-size: clamp(16px, 4vw, 22px);
+  font-weight: 700;
+  color: var(--cyan);
+}
+
+.hud-value.timer { color: var(--green); }
+.hud-value.timer.warning { color: var(--yellow); animation: pulse 0.5s infinite; }
+.hud-value.timer.danger { color: var(--red); animation: pulse 0.3s infinite; }
+
+@keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.5; } }
+
+/* ── TIMER BAR ── */
+.timer-bar-wrap {
+  width: 100%;
+  max-width: 480px;
+  height: 4px;
+  background: var(--border);
+  margin-bottom: 12px;
+  position: relative;
+  overflow: hidden;
+}
+
+.timer-bar {
+  height: 100%;
+  background: linear-gradient(90deg, var(--cyan), var(--magenta));
+  transition: width 0.5s linear, background 0.5s;
+  box-shadow: 0 0 8px var(--cyan);
+}
+
+.timer-bar.warning { background: linear-gradient(90deg, var(--yellow), var(--orange)); }
+.timer-bar.danger { background: var(--red); box-shadow: 0 0 8px var(--red); }
+
+/* ── VOID WALKER ── */
+.void-walker {
+  width: 100%;
+  max-width: 480px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--magenta);
+  padding: 8px 12px;
+  margin-bottom: 12px;
+  font-family: 'VT323', monospace;
+  font-size: 16px;
+  color: var(--magenta);
+  min-height: 36px;
+  position: relative;
+  overflow: hidden;
+}
+
+.void-walker::before {
+  content: 'V0ID-WALKER >';
+  font-size: 10px;
+  color: #663;
+  position: absolute;
+  top: 2px;
+  left: 8px;
+  letter-spacing: 1px;
+}
+
+.void-text {
+  margin-top: 10px;
+  display: block;
+  animation: typeIn 0.3s steps(30, end);
+}
+
+@keyframes typeIn {
+  from { clip-path: inset(0 100% 0 0); }
+  to { clip-path: inset(0 0% 0 0); }
+}
+
+/* ── WORD INPUT ── */
+.word-input-area {
+  width: 100%;
+  max-width: 480px;
+  background: var(--tile-bg);
+  border: 1px solid var(--tile-border);
+  border-top: 2px solid var(--cyan);
+  padding: 10px 14px;
+  margin-bottom: 10px;
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.word-display {
+  font-family: 'Orbitron', sans-serif;
+  font-size: clamp(18px, 5vw, 26px);
+  color: var(--cyan);
+  letter-spacing: 6px;
+  text-shadow: 0 0 10px var(--cyan);
+  flex: 1;
+  min-height: 30px;
+}
+
+.word-display.invalid { color: var(--red); text-shadow: 0 0 10px var(--red); }
+.word-display.valid { color: var(--green); text-shadow: 0 0 10px var(--green); }
+
+.btn-submit {
+  background: var(--cyan);
+  color: #000;
+  border: none;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 8px 14px;
+  cursor: pointer;
+  clip-path: polygon(6px 0, 100% 0, calc(100% - 6px) 100%, 0 100%);
+  letter-spacing: 1px;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+
+.btn-submit:active { transform: scale(0.95); background: var(--green); }
+.btn-submit:disabled { background: var(--dim); color: #222; cursor: default; }
+
+/* ── TILES ── */
+.tiles-area {
+  width: 100%;
+  max-width: 480px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+  margin-bottom: 14px;
+  min-height: 100px;
+}
+
+.tile {
+  width: clamp(44px, 12vw, 58px);
+  height: clamp(44px, 12vw, 58px);
+  background: var(--tile-bg);
+  border: 1px solid var(--tile-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Orbitron', sans-serif;
+  font-size: clamp(18px, 5vw, 26px);
+  font-weight: 700;
+  color: var(--text);
+  cursor: pointer;
+  position: relative;
+  transition: all 0.15s;
+  clip-path: polygon(4px 0, 100% 0, calc(100% - 4px) 100%, 0 100%);
+  user-select: none;
+  -webkit-user-select: none;
+  animation: tileIn 0.3s cubic-bezier(0.34,1.56,0.64,1) both;
+}
+
+.tile::after {
+  content: attr(data-pts);
+  position: absolute;
+  bottom: 2px;
+  right: 4px;
+  font-size: 8px;
+  color: var(--dim);
+  font-family: 'Share Tech Mono', monospace;
+}
+
+@keyframes tileIn {
+  from { transform: translateY(-30px) scale(0.5); opacity: 0; }
+  to { transform: translateY(0) scale(1); opacity: 1; }
+}
+
+.tile:hover { border-color: var(--cyan); box-shadow: 0 0 12px var(--tile-glow); color: var(--cyan); }
+.tile:active { transform: scale(0.9); }
+
+.tile.selected {
+  background: #001a1f;
+  border-color: var(--cyan);
+  color: var(--cyan);
+  box-shadow: 0 0 16px var(--cyan), inset 0 0 8px #00f5ff22;
+}
+
+.tile.used { opacity: 0.15; cursor: default; pointer-events: none; }
+
+.tile.discard-mode { border-color: var(--orange); }
+.tile.discard-mode:hover { border-color: var(--red); color: var(--red); box-shadow: 0 0 12px var(--red)44; }
+
+/* ── CONTROLS ── */
+.controls {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+  max-width: 480px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+
+.btn {
+  flex: 1;
+  min-width: 80px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 11px;
+  padding: 10px 8px;
+  cursor: pointer;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  transition: all 0.15s;
+  clip-path: polygon(4px 0, 100% 0, calc(100% - 4px) 100%, 0 100%);
+  position: relative;
+}
+
+.btn:active { transform: scale(0.96); }
+.btn:disabled { opacity: 0.3; cursor: default; }
+
+.btn-shuffle { border-color: var(--cyan); color: var(--cyan); }
+.btn-shuffle:hover:not(:disabled) { background: #001a1f; box-shadow: 0 0 10px var(--cyan)44; }
+
+.btn-clear { border-color: var(--magenta); color: var(--magenta); }
+.btn-clear:hover { background: #1a0011; }
+
+.btn-discard { border-color: var(--orange); color: var(--orange); }
+.btn-discard:hover:not(:disabled) { background: #1a0a00; }
+.btn-discard.active { background: #1a0a00; border-color: var(--red); color: var(--red); }
+
+.btn-count {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 10px;
+  display: block;
+  opacity: 0.6;
+  margin-top: 2px;
+}
+
+/* ── FOUND WORDS ── */
+.found-section {
+  width: 100%;
+  max-width: 480px;
+}
+
+.found-label {
+  font-size: 10px;
+  color: var(--dim);
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 4px;
+}
+
+.found-words {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  max-height: 140px;
+  overflow-y: auto;
+}
+
+.found-word {
+  background: #0a1a0a;
+  border: 1px solid #1a3a1a;
+  color: var(--green);
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 13px;
+  padding: 3px 8px;
+  letter-spacing: 1px;
+  animation: wordIn 0.3s cubic-bezier(0.34,1.56,0.64,1) both;
+  position: relative;
+}
+
+.found-word.bonus {
+  background: #1a0a1a;
+  border-color: var(--magenta);
+  color: var(--magenta);
+  box-shadow: 0 0 8px var(--magenta)44;
+}
+
+.found-word .word-pts {
+  font-size: 9px;
+  opacity: 0.6;
+  margin-left: 4px;
+}
+
+@keyframes wordIn {
+  from { transform: scale(0) rotate(-10deg); opacity: 0; }
+  to { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+
+/* ── START SCREEN ── */
+#screen-start {
+  justify-content: center;
+  gap: 24px;
+}
+
+.start-logo {
+  text-align: center;
+}
+
+.start-logo .big {
+  font-family: 'Orbitron', sans-serif;
+  font-size: clamp(28px, 8vw, 48px);
+  font-weight: 900;
+  color: var(--cyan);
+  text-shadow: 0 0 30px var(--cyan), 0 0 60px var(--cyan)88;
+  display: block;
+  letter-spacing: 4px;
+  animation: flicker 5s infinite;
+}
+
+.start-logo .big2 {
+  font-family: 'Orbitron', sans-serif;
+  font-size: clamp(20px, 5vw, 32px);
+  font-weight: 700;
+  color: var(--magenta);
+  text-shadow: 0 0 20px var(--magenta);
+  display: block;
+  letter-spacing: 8px;
+  margin-top: 4px;
+}
+
+.start-logo .tagline {
+  font-family: 'VT323', monospace;
+  font-size: 16px;
+  color: #556;
+  letter-spacing: 2px;
+  margin-top: 8px;
+  display: block;
+}
+
+.rules-box {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--cyan);
+  padding: 16px;
+  width: 100%;
+  max-width: 400px;
+}
+
+.rules-box h3 {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 11px;
+  color: var(--cyan);
+  letter-spacing: 3px;
+  margin-bottom: 12px;
+}
+
+.rules-box li {
+  font-size: 13px;
+  color: var(--text);
+  margin-bottom: 8px;
+  list-style: none;
+  padding-left: 16px;
+  position: relative;
+  line-height: 1.5;
+}
+
+.rules-box li::before { content: '▸'; position: absolute; left: 0; color: var(--cyan); }
+.rules-box li span { color: var(--yellow); }
+.rules-box li em { color: var(--magenta); font-style: normal; }
+
+.btn-start {
+  background: transparent;
+  border: 2px solid var(--cyan);
+  color: var(--cyan);
+  font-family: 'Orbitron', sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  padding: 16px 48px;
+  cursor: pointer;
+  letter-spacing: 4px;
+  clip-path: polygon(10px 0, 100% 0, calc(100% - 10px) 100%, 0 100%);
+  transition: all 0.2s;
+  text-transform: uppercase;
+  box-shadow: 0 0 20px var(--cyan)33, inset 0 0 20px var(--cyan)11;
+}
+
+.btn-start:hover {
+  background: var(--cyan)22;
+  box-shadow: 0 0 30px var(--cyan)66, inset 0 0 20px var(--cyan)22;
+}
+
+.btn-start:active { transform: scale(0.96); }
+
+/* ── DISCARD SCREEN ── */
+#screen-discard {
+  justify-content: center;
+  gap: 20px;
+}
+
+.discard-header {
+  text-align: center;
+}
+
+.discard-header h2 {
+  font-family: 'Orbitron', sans-serif;
+  font-size: clamp(18px, 5vw, 24px);
+  color: var(--orange);
+  letter-spacing: 3px;
+  text-shadow: 0 0 15px var(--orange);
+}
+
+.discard-header p {
+  font-size: 13px;
+  color: var(--text);
+  margin-top: 8px;
+  opacity: 0.7;
+  line-height: 1.5;
+}
+
+.discard-tiles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+  width: 100%;
+  max-width: 480px;
+}
+
+.discard-tile {
+  width: clamp(50px, 14vw, 66px);
+  height: clamp(50px, 14vw, 66px);
+  background: var(--tile-bg);
+  border: 2px solid var(--tile-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Orbitron', sans-serif;
+  font-size: clamp(20px, 6vw, 30px);
+  font-weight: 700;
+  color: var(--text);
+  cursor: pointer;
+  clip-path: polygon(5px 0, 100% 0, calc(100% - 5px) 100%, 0 100%);
+  transition: all 0.15s;
+  animation: tileIn 0.3s cubic-bezier(0.34,1.56,0.64,1) both;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.discard-tile:nth-child(2) { animation-delay: 0.05s; }
+.discard-tile:nth-child(3) { animation-delay: 0.1s; }
+.discard-tile:nth-child(4) { animation-delay: 0.15s; }
+.discard-tile:nth-child(5) { animation-delay: 0.2s; }
+.discard-tile:nth-child(6) { animation-delay: 0.25s; }
+.discard-tile:nth-child(7) { animation-delay: 0.3s; }
+.discard-tile:nth-child(8) { animation-delay: 0.35s; }
+.discard-tile:nth-child(9) { animation-delay: 0.4s; }
+.discard-tile:nth-child(10) { animation-delay: 0.45s; }
+
+.discard-tile.marked {
+  background: #1a0000;
+  border-color: var(--red);
+  color: var(--red);
+  box-shadow: 0 0 14px var(--red)44;
+  text-decoration: line-through;
+}
+
+.discard-info {
+  font-family: 'VT323', monospace;
+  font-size: 18px;
+  color: var(--orange);
+  text-align: center;
+}
+
+.btn-confirm-discard {
+  background: var(--orange);
+  color: #000;
+  border: none;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 14px 40px;
+  cursor: pointer;
+  clip-path: polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%);
+  letter-spacing: 2px;
+  transition: all 0.15s;
+}
+
+.btn-confirm-discard:active { transform: scale(0.96); }
+
+/* ── END SCREEN ── */
+#screen-end {
+  justify-content: center;
+  gap: 20px;
+}
+
+.end-result {
+  text-align: center;
+}
+
+.end-result .grade {
+  font-family: 'Orbitron', sans-serif;
+  font-size: clamp(48px, 15vw, 80px);
+  font-weight: 900;
+  display: block;
+  animation: flicker 3s infinite;
+}
+
+.end-result .grade.s { color: var(--yellow); text-shadow: 0 0 40px var(--yellow); }
+.end-result .grade.a { color: var(--cyan); text-shadow: 0 0 40px var(--cyan); }
+.end-result .grade.b { color: var(--green); text-shadow: 0 0 30px var(--green); }
+.end-result .grade.c { color: var(--text); }
+.end-result .grade.f { color: var(--red); text-shadow: 0 0 20px var(--red); }
+
+.end-result .end-score {
+  font-family: 'Orbitron', sans-serif;
+  font-size: clamp(24px, 6vw, 36px);
+  color: var(--cyan);
+  display: block;
+  margin-top: 8px;
+}
+
+.end-result .end-label {
+  font-size: 11px;
+  color: var(--dim);
+  letter-spacing: 3px;
+  display: block;
+  margin-top: 4px;
+}
+
+.end-theme-reveal {
+  background: var(--panel);
+  border: 1px solid var(--magenta);
+  padding: 14px 20px;
+  text-align: center;
+  width: 100%;
+  max-width: 400px;
+}
+
+.end-theme-reveal .theme-label {
+  font-size: 10px;
+  color: var(--dim);
+  letter-spacing: 3px;
+  display: block;
+  margin-bottom: 6px;
+}
+
+.end-theme-reveal .theme-name {
+  font-family: 'Orbitron', sans-serif;
+  font-size: clamp(18px, 5vw, 24px);
+  color: var(--magenta);
+  font-weight: 700;
+  text-shadow: 0 0 15px var(--magenta);
+}
+
+.end-theme-reveal .theme-found {
+  font-size: 12px;
+  color: var(--text);
+  margin-top: 6px;
+  opacity: 0.7;
+}
+
+.end-words {
+  width: 100%;
+  max-width: 400px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  padding: 12px;
+}
+
+.end-words h3 {
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--dim);
+  margin-bottom: 8px;
+  text-transform: uppercase;
+}
+
+.end-word-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.end-word-item {
+  font-size: 13px;
+  color: var(--green);
+  padding: 2px 8px;
+  background: #0a1a0a;
+  border: 1px solid #1a3a1a;
+}
+
+.end-word-item.bonus {
+  color: var(--magenta);
+  background: #1a0a1a;
+  border-color: var(--magenta);
+}
+
+.end-buttons {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.btn-end {
+  background: transparent;
+  border: 1px solid var(--cyan);
+  color: var(--cyan);
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 13px;
+  padding: 12px 28px;
+  cursor: pointer;
+  clip-path: polygon(6px 0, 100% 0, calc(100% - 6px) 100%, 0 100%);
+  transition: all 0.15s;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  text-decoration: none;
+  display: inline-block;
+}
+
+.btn-end:hover { background: var(--cyan)22; box-shadow: 0 0 10px var(--cyan)44; }
+.btn-end:active { transform: scale(0.96); }
+.btn-end.secondary { border-color: var(--dim); color: var(--dim); }
+.btn-end.secondary:hover { border-color: var(--text); color: var(--text); background: transparent; box-shadow: none; }
+
+/* ── BONUS FLASH ── */
+.bonus-flash {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-family: 'Orbitron', sans-serif;
+  font-size: clamp(24px, 7vw, 36px);
+  font-weight: 900;
+  color: var(--magenta);
+  text-shadow: 0 0 30px var(--magenta);
+  z-index: 2000;
+  pointer-events: none;
+  animation: bonusAnim 1.2s forwards;
+  text-align: center;
+  line-height: 1.3;
+}
+
+.bonus-flash .bonus-pts {
+  display: block;
+  font-size: 0.6em;
+  color: var(--yellow);
+  text-shadow: 0 0 20px var(--yellow);
+}
+
+@keyframes bonusAnim {
+  0% { opacity: 0; transform: translate(-50%, -60%) scale(0.5); }
+  20% { opacity: 1; transform: translate(-50%, -50%) scale(1.1); }
+  70% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -40%) scale(0.9); }
+}
+
+/* ── SCORE FLASH ── */
+.score-flash {
+  position: fixed;
+  top: 30%;
+  right: 20px;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--green);
+  text-shadow: 0 0 10px var(--green);
+  z-index: 2000;
+  pointer-events: none;
+  animation: scoreAnim 1s forwards;
+}
+
+@keyframes scoreAnim {
+  0% { opacity: 1; transform: translateY(0); }
+  100% { opacity: 0; transform: translateY(-40px); }
+}
+
+/* ── GLITCH ── */
+.glitch-anim {
+  animation: glitch 0.3s steps(2, end) 3;
+}
+
+@keyframes glitch {
+  0% { transform: translateX(0); filter: none; }
+  25% { transform: translateX(-3px); filter: hue-rotate(90deg); }
+  50% { transform: translateX(3px); filter: hue-rotate(-90deg); }
+  75% { transform: translateX(-1px); filter: none; }
+  100% { transform: translateX(0); }
+}
+
+/* ── LEVEL BADGE ── */
+.level-badge {
+  font-family: 'VT323', monospace;
+  font-size: 14px;
+  color: var(--yellow);
+  text-align: center;
+  letter-spacing: 2px;
+  margin-bottom: 6px;
+}
+
+/* SCROLLBAR */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--border); }
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════ START SCREEN -->
+<div id="screen-start" class="screen active">
+  <div class="start-logo">
+    <span class="big">LETTER</span>
+    <span class="big2">CASCADE</span>
+    <span class="tagline">// MAXIMUM REALITY WORD SYSTEM v2.7 //</span>
+  </div>
+
+  <div class="rules-box">
+    <h3>[ SYSTEM BRIEFING ]</h3>
+    <ul>
+      <li>Build words from <span>8–10 letter tiles</span> before time runs out</li>
+      <li>Discard up to <span>2 tiles</span> before the clock starts</li>
+      <li>Use <span>3 shuffles</span> to rearrange your tiles mid-game</li>
+      <li>Find <em>bonus words</em> matching the hidden theme for extra points</li>
+      <li>Longer words score higher — 3+ letters to score</li>
+    </ul>
+  </div>
+
+  <button class="btn-start" onclick="startGame()">INITIALIZE</button>
+
+  <a href="https://maximumreality.xyz" style="font-size:11px;color:#334;text-decoration:none;letter-spacing:2px;margin-top:8px;">◀ MAXIMUM REALITY</a>
+</div>
+
+<!-- ══════════════════════════════════════════ DISCARD SCREEN -->
+<div id="screen-discard" class="screen">
+  <div class="discard-header">
+    <h2>PRE-GAME DISCARD</h2>
+    <p>Tap up to 2 tiles to discard before the round begins.<br>Discarded tiles are replaced with new ones.</p>
+  </div>
+
+  <div class="discard-tiles" id="discard-tiles"></div>
+
+  <div class="discard-info" id="discard-info">SELECT TILES TO DISCARD (0/2)</div>
+
+  <button class="btn-confirm-discard" onclick="confirmDiscard()">COMMIT TO BATTLE ▸</button>
+</div>
+
+<!-- ══════════════════════════════════════════ GAME SCREEN -->
+<div id="screen-game" class="screen">
+  <div class="game-header">
+    <div class="logo">LETTER <span>CASCADE</span></div>
+    <div class="sub">// MAXIMUM REALITY //</div>
+  </div>
+
+  <div class="level-badge" id="level-badge">LEVEL 01 // ROUND INITIALIZING</div>
+
+  <div class="hud">
+    <div class="hud-box">
+      <div class="hud-label">SCORE</div>
+      <div class="hud-value" id="hud-score">0</div>
+    </div>
+    <div class="hud-box">
+      <div class="hud-label">TIME</div>
+      <div class="hud-value timer" id="hud-timer">90</div>
+    </div>
+    <div class="hud-box">
+      <div class="hud-label">WORDS</div>
+      <div class="hud-value" id="hud-words">0</div>
+    </div>
+  </div>
+
+  <div class="timer-bar-wrap">
+    <div class="timer-bar" id="timer-bar"></div>
+  </div>
+
+  <div class="void-walker">
+    <span class="void-text" id="void-text">SYSTEM ONLINE. FIND THE WORDS.</span>
+  </div>
+
+  <div class="word-input-area">
+    <div class="word-display" id="word-display">_</div>
+    <button class="btn-submit" id="btn-submit" onclick="submitWord()" disabled>SUBMIT</button>
+  </div>
+
+  <div class="tiles-area" id="tiles-area"></div>
+
+  <div class="controls">
+    <button class="btn btn-discard" id="btn-discard-mode" onclick="toggleDiscardMode()">
+      SWAP TILE
+      <span class="btn-count" id="discard-count">NOT AVAILABLE</span>
+    </button>
+    <button class="btn btn-shuffle" id="btn-shuffle" onclick="shuffleTiles()">
+      SHUFFLE
+      <span class="btn-count" id="shuffle-count">3 LEFT</span>
+    </button>
+    <button class="btn btn-clear" onclick="clearWord()">CLEAR</button>
+  </div>
+
+  <div class="found-section">
+    <div class="found-label">FOUND WORDS</div>
+    <div class="found-words" id="found-words"></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════ END SCREEN -->
+<div id="screen-end" class="screen">
+  <div class="end-result">
+    <span class="grade" id="end-grade">A</span>
+    <span class="end-score" id="end-score">0</span>
+    <span class="end-label">FINAL SCORE</span>
+  </div>
+
+  <div class="end-theme-reveal" id="end-theme-reveal">
+    <span class="theme-label">HIDDEN THEME WAS</span>
+    <span class="theme-name" id="end-theme-name">???</span>
+    <span class="theme-found" id="end-theme-found"></span>
+  </div>
+
+  <div class="end-words">
+    <h3>[ WORDS FOUND ]</h3>
+    <div class="end-word-list" id="end-word-list"></div>
+  </div>
+
+  <div class="end-buttons">
+    <button class="btn-end" onclick="startGame()">PLAY AGAIN</button>
+    <a href="https://maximumreality.xyz" class="btn-end secondary">HOME BASE</a>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════════════
+// DICTIONARY — common English words 3–8 letters
+// ══════════════════════════════════════════════════════════════
+const WORD_LIST = new Set([
+  // 3-letter
+  "ace","act","add","age","ago","aid","aim","air","all","and","ant","ape","apt","arc","are","ark","arm","art","ash","ask","axe",
+  "bad","bag","ban","bar","bat","bay","bed","big","bit","bow","box","boy","bun","bus","but","buy",
+  "cab","can","cap","car","cat","cob","cod","cop","cot","cow","cry","cup","cut",
+  "dam","day","den","dew","did","dig","dim","dip","dog","dot","dry","due","dug","dye",
+  "ear","eat","egg","ego","elf","elm","end","era","eve","ewe","eye",
+  "fad","fan","far","fat","fax","fed","few","fig","fin","fit","fix","fly","fog","foe","for","fox","fry","fun","fur",
+  "gap","gas","get","gig","gin","gnu","god","got","gun","gut","guy",
+  "had","ham","has","hat","hay","hen","her","hid","him","hip","his","hit","hog","hop","hot","how","hub","hug","hum","hut",
+  "ice","ill","imp","ink","inn","ion","ire",
+  "jab","jag","jam","jar","jaw","jet","jot","joy","jug","jut",
+  "keg","key","kid","kin","kit",
+  "lab","lap","law","lay","led","leg","let","lid","lie","lip","lit","log","lot","low",
+  "mad","man","map","mat","men","met","mix","mob","mop","mud","mug","nab","nag","nap","net","new","nil","nip","nod","nor","not","now","nun","nut",
+  "oak","oar","odd","ode","off","oil","old","one","opt","orb","ore","our","out","owe","owl","own",
+  "pad","pal","pan","paw","pay","pea","peg","pen","pet","pie","pig","pit","ply","pod","pop","pot","pow","pro","pub","pun","pup","put",
+  "ram","ran","rat","raw","ray","red","rep","rid","rig","rip","rob","rod","rot","row","rub","rug","run","rut",
+  "sad","sag","sap","sat","saw","say","sea","set","sew","she","shy","sin","sip","sit","six","ski","sky","sly","sob","sod","son","sow","soy","spa","spy","sty","sub","sum","sun","sup",
+  "tab","tan","tap","tar","tea","the","tie","tin","tip","toe","too","top","tow","toy","try","tub","tug","two",
+  "urn","use","van","vat","vet","vow","wag","war","was","wax","web","wed","wig","win","wit","woe","wok","won","woo","wow",
+  "yam","yap","yew","yore","you",
+  "zap","zen","zip","zoo",
+  // 4-letter
+  "able","ache","acid","acre","aged","ages","aids","aims","airs","akin","alma","also","alto","alum","amen","amid","amok","amok","amps","ankh","ante","apex","arch","area","aria","arid","army","arty","atom","aunt","auto","avid","away","awed","axle","azure",
+  "back","bade","bail","bait","bake","bald","bale","balk","ball","balm","band","bane","bang","bank","bare","bark","barn","base","bash","bask","bass","beak","beam","bean","bear","beat","been","beef","beer","beet","bell","belt","bend","bent","best","bill","bind","bird","bite","blab","blah","blip","blob","bloc","blog","blot","blow","blue","blur","boar","boat","body","bold","bolt","bond","bone","book","boom","boot","bore","born","both","bout","brag","bran","brat","bray","brew","brim","brow","buck","bulb","bulk","bull","bump","burn","burp","burr","bush","buzz",
+  "cage","cake","call","calm","came","cane","cape","card","care","cart","case","cash","cast","cave","cell","chap","char","chat","chef","chew","chin","chip","chop","cite","clam","clap","claw","clay","clip","clog","clot","club","clue","coal","coat","coil","coin","cola","cold","coma","come","cone","cook","cool","coop","cope","cord","core","cork","corn","cost","cozy","crag","cram","crap","crew","crop","crow","crud","cube","curb","cure","curl","cyst",
+  "dale","dare","dark","dart","data","date","dawn","dead","deal","dear","deck","deed","deep","deer","deny","desk","dew","dial","dice","died","dike","dime","dine","dire","dirt","disk","dive","dock","dome","done","dope","dork","dose","dove","down","drag","draw","drew","drip","drop","drug","drum","dual","duel","dumb","dump","dunk","dusk","dust","duty",
+  "each","earn","ease","east","easy","edge","edit","eels","emit","envy","epic","even","ever","evil","exam",
+  "face","fact","fade","fail","fair","fake","fall","fame","fang","farm","fate","faze","fear","feat","feed","feel","feet","fell","felt","fend","fern","feud","fief","file","fill","film","find","fine","fire","firm","fish","fist","five","flag","flak","flap","flat","flaw","flea","flew","flex","flip","flit","flog","flop","flow","foam","fold","folk","fond","font","food","fool","foot","ford","fore","fork","form","fort","foul","four","fowl","fray","free","fret","frog","from","fuel","full","fume","fund","funk","furl","fury","fuse","fuzz",
+  "gain","gale","gall","game","gang","gate","gaze","gear","germ","gift","gill","girl","give","glad","glee","glib","glob","glue","glum","gnat","goal","goat","goes","gold","golf","gone","good","gory","gown","grab","grit","grow","grub","gruel","gulf","gull","gush","gust","guts",
+  "hack","hail","hair","hale","half","hall","halt","hand","hang","hard","hare","hark","harm","harp","hash","hate","haul","head","heal","heap","hear","heat","heel","held","helm","help","herb","herd","here","hero","hide","high","hike","hill","hire","hive","hoax","hold","hole","home","hone","hoof","hook","hope","horn","hose","hour","huff","hulk","hull","hung","hunt","hurt","husk","hymn",
+  "idea","idle","idol","imam","inch","info","into","iron","isle",
+  "jail","jest","join","joke","jolt","junk","jury","just",
+  "keen","keep","kick","kill","kind","king","kiss","knit","knob","knot","know",
+  "lack","lake","lame","lamp","land","lane","lard","lash","laud","lava","lawn","lead","leaf","leak","lean","leap","lend","lens","lest","levy","liar","lick","lift","like","lily","lime","line","link","lion","list","live","load","lobe","lock","loft","lone","long","look","loom","loon","lore","lore","lore","lost","loud","lout","love","luck","lull","lump","lung","lurk","lust","lute",
+  "mace","made","mail","main","make","male","mall","malt","mane","mare","mark","mars","mash","mast","mate","math","maze","mead","meal","mean","meat","melt","memo","mend","mere","mesa","mesh","mild","mile","mill","mime","mind","mine","mint","mire","miss","mist","moat","mode","mole","molt","monk","moon","moot","more","moss","most","moth","move","much","muck","mule","muse","mute",
+  "nail","name","nape","navy","near","neat","neck","need","news","nice","nigh","nine","node","none","noon","nope","norm","nose","note","null",
+  "oboe","once","only","open","opus","orca","oven","over","oxen",
+  "pace","pack","page","pain","pair","pale","palm","park","part","pass","past","path","pave","peak","peal","peck","peek","peel","peer","pelt","perm","pick","pile","pine","pink","pipe","pity","pixe","plan","play","plea","plod","plot","plow","ploy","ploy","plug","plum","plop","poem","poet","poke","pole","poll","pomp","pond","pool","poor","pope","pork","port","pose","post","pour","pray","prey","prim","prod","prop","puck","pull","pump","pure","push",
+  "rack","rage","raid","rail","rain","rake","ramp","rang","rank","rant","rapt","rash","rasp","rate","rave","read","real","reap","reel","rein","rely","rend","rend","rent","rest","rice","rich","ride","rile","rind","ring","riot","ripe","rise","risk","road","roam","roar","robe","role","roll","roof","rook","root","rope","rose","rote","rove","ruin","rule","ruse","rush","rust",
+  "sack","sage","sail","sake","sale","salt","same","sand","sane","sang","sash","save","scan","scar","seal","seam","sect","seed","seek","seem","seep","seer","self","sell","send","sent","shed","shin","ship","shop","shot","show","sick","side","sift","sigh","silk","sill","silo","silt","sing","sink","site","size","skid","skin","skip","slab","slam","slap","slat","sled","slew","slid","slim","slip","slit","slob","slop","slot","slow","slug","slum","slur","smog","snag","snap","snip","snob","snug","soak","soap","soar","sock","soft","soil","sole","some","song","sort","soul","sour","span","spar","spin","spit","spud","spur","stab","star","stay","stem","step","stew","stir","stop","stub","such","suit","sulk","surf","swam","swap","swat","sway","swim","swum",
+  "tack","tale","talk","tall","tame","tank","tape","tare","taut","taxi","tear","tech","tell","tend","tent","term","test","text","than","that","them","then","thin","this","thorn","tick","tile","till","tilt","time","tiny","tire","toad","toil","told","toll","tomb","tome","tone","tong","tool","tore","torn","toss","tour","town","tram","trap","trek","trim","trip","trod","trot","true","tube","tuck","tuft","tuna","tune","turf","turn","tusk","tutu","type",
+  "ugly","undo","unit","upon","urge",
+  "vale","vane","vary","veil","vein","very","vest","vibe","vice","vile","vine","vise","void","volt","vote",
+  "wade","wage","wake","wand","want","ward","warm","warn","wart","wave","weak","weal","wean","weld","well","welt","wend","went","west","what","when","whim","whip","wick","wide","wife","wild","will","wilt","wind","wine","wing","wink","wire","wise","wish","with","woke","wolf","womb","wood","wool","word","wore","work","worm","worn","wove","wrap","wren","writ",
+  "yell","yoga","yolk","yore","york","yuan","yule",
+  "zeal","zero","zest","zinc","zone",
+  // 5-letter
+  "about","above","abuse","actor","acute","admit","adopt","adult","after","again","agile","aging","agree","ahead","alarm","album","alert","alike","align","alive","alley","allot","allow","alone","along","aloof","alpha","altar","alter","amber","among","angel","anger","angle","angry","ankle","annex","annoy","antic","aorta","apart","apply","apron","arbor","ardor","arise","armor","aroma","arose","array","arson","atlas","atone","attic","audit","augur","avoid","awake","awash","axial",
+  "baker","banjo","basic","basin","basis","batch","began","begin","below","bench","black","blade","blame","bland","blank","blast","blaze","bleak","bleed","blend","bless","blight","blind","block","blood","bloom","blown","blunt","board","boast","boxer","braid","brake","brand","brave","brawl","break","bride","brief","bring","brink","broad","broke","brood","brook","broom","brown","brush","build","built","bulge","buyer",
+  "cable","cadet","camel","canal","candy","cargo","carry","catch","cause","cease","chain","chair","chalk","champ","chaos","charm","chase","cheap","check","cheek","chess","chest","chief","child","choir","chore","chose","civic","civil","claim","clash","class","clean","clear","clerk","click","cliff","climb","cling","clock","close","cloth","cloud","coach","coast","cobra","comet","comic","comma","coral","cords","could","count","court","cover","crack","craft","crane","cramp","craze","creak","creek","crest","crime","crimp","crisp","cross","crowd","crown","crush","crypt","curry","curve","cycle",
+  "daily","dairy","dance","datum","death","debut","decoy","delta","depot","depth","derby","devil","digit","diner","disco","ditch","dizzy","dodge","doing","donor","doubt","dough","draft","drain","drama","drape","drash","drawn","dread","dream","dried","drift","drink","drive","drone","drove","dwarf","dwell",
+  "eager","eagle","early","earth","eight","elite","email","ember","empty","ended","enemy","enjoy","enter","entry","equal","equip","error","essay","event","every","exact","excel","extra","exert","exude",
+  "fable","facet","faith","false","fancy","favor","feast","ferry","fever","fiber","fiend","fifty","fight","final","first","fjord","flame","flask","flick","floor","flour","focus","force","forge","found","frame","franc","frank","fraud","fresh","front","frost","froth","frown","froze","fully","fungi","funky",
+  "gleam","glide","glint","globe","gloom","gloss","glove","glyph","gnash","grace","grade","grain","grand","grant","grasp","grass","grave","graze","greed","green","greet","grief","grime","grind","groan","groin","groom","grope","gross","group","grove","growl","gruel","guard","guest","guide","guile","guise","gusto","gypsy",
+  "habit","happy","harsh","haven","hazel","heart","heavy","hedge","heist","hence","heron","hinge","hippo","hoist","holly","honey","honor","horse","hotel","hound","house","human","humid","humor","hurry",
+  "image","imply","inbox","incur","index","indie","infer","ingot","input","inter","intro",
+  "irony","issue","ivory",
+  "jaunt","jewel","judge","juice","juicy","juror",
+  "karma","ketch","knack","knife","knock","known",
+  "label","lance","large","laser","latch","later","laugh","layer","learn","leash","least","leave","light","limit","liner","lingo","liver","llama","logic","lorry","lover","lower","lucky","lusty","lyric",
+  "magic","major","maker","manor","marble","march","match","mayor","media","mercy","merit","metal","minor","minus","mimic","modem","money","month","moose","moral","mourn","mouse","mouth","music","myrrh","mystery",
+  "naive","never","night","ninja","nod","noise","north","noter","novel","nurse",
+  "oasis","occur","offer","often","olive","onset","opera","orbit","order","other","outer","outdo","oxide",
+  "pagan","paint","panel","panic","pasta","patch","pause","peace","pearl","pedal","penny","perch","petal","phase","phone","photo","piano","pinch","pixel","pizza","place","plain","plane","plant","plate","plaza","plead","pluck","plume","plunge","point","poise","poker","polar","prank","press","price","pride","prime","prince","print","prior","prize","probe","prone","proof","proud","prove","prowl","prune","pulse","punch","purse","queen","quest","queue","quick","quiet","quirk","quota","quote",
+  "racer","radar","radio","raise","rally","ranch","range","rapid","ratio","rayon","reach","react","rebel","recur","reign","relax","relic","repay","resin","retro","rider","risky","rival","river","robot","rocky","rouge","rough","roost","round","route","rover","royal","rugby","ruler","rupee","rural",
+  "salad","sauce","scale","scene","scout","scram","scrub","seize","serve","seven","shade","shake","shame","shape","share","shark","sharp","sheet","shelf","shift","shirt","shone","shore","shout","shove","shrug","sight","silly","since","sixty","skill","skull","slate","slave","sleek","sleep","sleet","slender","slice","slide","slope","slosh","small","smart","smell","smile","smirk","smoke","smote","smug","snake","snail","snare","sneak","snore","solid","sonic","sorry","south","space","spare","spark","spawn","speak","spear","speed","spend","spice","spike","spill","spine","spite","spoil","spoke","spook","spoon","squad","squat","stale","stall","stamp","stand","stash","state","steal","steel","steep","steer","stern","stick","sting","stone","stood","stool","storm","story","stout","shove","straw","stray","strip","strut","study","stuff","stump","stung","style","sugar","super","swear","sweep","sweet","swept","swift","swore","sword","swore",
+  "table","talon","taste","teach","teeth","tempo","tense","theme","there","these","thick","thigh","thing","think","thorn","those","three","threw","throw","thumb","tiger","tiger","title","today","touch","tough","tower","toxic","trace","track","trade","trail","train","trait","trash","treat","trial","trick","tried","troop","troth","trove","truck","truly","trump","trunk","tuner","twist","tying",
+  "umbra","uncle","under","union","unity","until","unzip","uplift","upset","urban","usage","usual","utmost","utter",
+  "vague","valid","valor","value","valve","verse","vibrant","video","vigor","viral","visor","vista","vital","vivid","vocal","vogue","voice","voodoo","voter",
+  "wager","watch","water","weary","weave","wedge","weigh","weird","whale","wheat","where","while","whirl","white","whole","whose","wider","wield","witch","woman","women","world","worse","worth","would","wound","wring","wrote","wrath",
+  "yacht","yearn","yield","young","youth",
+  "zebra","zonal",
+]);
+
+// ══════════════════════════════════════════════════════════════
+// THEMES — bonus word sets
+// ══════════════════════════════════════════════════════════════
+const THEMES = [
+  { name: "OCEAN LIFE",    words: ["sea","wave","tide","fish","crab","reef","kelp","foam","dive","boat","sail","whale","shark","coral","orca","brine","coil","net"] },
+  { name: "PREDATORS",     words: ["wolf","fang","claw","bite","hunt","trap","prey","snarl","lure","stalk","kill","lurk","bear","lion","hawk","puma","venom"] },
+  { name: "TECHNOLOGY",    words: ["code","data","byte","hack","node","wire","chip","grid","boot","ping","log","pixel","binary","core","loop","ram","net","patch"] },
+  { name: "WEATHER",       words: ["rain","snow","hail","wind","gale","sleet","fog","mist","cloud","bolt","storm","frost","ice","damp","gust","chill","dew","humid"] },
+  { name: "DARK MAGIC",    words: ["hex","rune","curse","void","soul","doom","omen","sigil","seal","bind","tomb","wrath","dread","smite","ash","sorrow","ghost","shade"] },
+  { name: "FOOD & FEAST",  words: ["loaf","salt","herb","cook","meat","stew","broth","spice","bake","brew","grain","flour","honey","sauce","crisp","corn","bean","yam"] },
+  { name: "SPACE",         words: ["star","moon","sun","void","comet","orbit","dust","ring","nova","fuel","drift","core","ion","probe","dark","mass","warp","pulsar"] },
+  { name: "URBAN JUNGLE",  words: ["road","alley","smog","block","light","wall","gate","sign","lane","curb","grid","pipe","drain","roof","lock","cable","mall","pole"] },
+  { name: "THE BODY",      words: ["bone","vein","lung","arm","leg","skin","nerve","pulse","cell","chest","jaw","knee","palm","heel","calf","shin","back","rib"] },
+  { name: "CYBER GLITCH",  words: ["lag","bug","loop","null","void","data","glitch","trace","scan","probe","hack","fuse","wipe","burn","boot","drift","echo","ping"] },
+];
+
+// ══════════════════════════════════════════════════════════════
+// LETTER FREQUENCY + POINT VALUES
+// ══════════════════════════════════════════════════════════════
+const LETTERS = "AAABBBCCCDDDEEEFFFGGGHHIIIIJJKKLLLLMMMNNNOOOOPPPQRRRRRSSSSTTTTTUUUVVWWXYYZ";
+
+const LETTER_PTS = {
+  A:1,E:1,I:1,O:1,U:1,N:1,R:1,S:1,T:1,L:1,
+  D:2,G:2,
+  B:3,C:3,M:3,P:3,
+  F:4,H:4,V:4,W:4,Y:4,
+  K:5,
+  J:8,X:8,
+  Q:10,Z:10
+};
+
+// ══════════════════════════════════════════════════════════════
+// VOID WALKER LINES
+// ══════════════════════════════════════════════════════════════
+const VOID_IDLE = [
+  "SCANNING FOR SIGNAL...",
+  "THE LETTERS KNOW WHERE THEY WANT TO GO.",
+  "ENTROPY INCREASES. SO DOES YOUR SCORE.",
+  "NOT ALL WORDS ARE VISIBLE TO THE NAKED EYE.",
+  "PATTERN RECOGNITION: ONLINE.",
+  "THE VOID WAITS. DOES IT HAVE WORDS? YES.",
+  "GLITCH IN THE LEXICON. PROCEED.",
+  "NEURAL NET: HUMMING.",
+  "FIND THE HIDDEN SIGNAL.",
+  "EVERY LETTER IS A CLUE.",
+];
+
+const VOID_BONUS = [
+  "ANOMALY DETECTED. BONUS LOCKED IN.",
+  "THE THEME BLEEDS THROUGH.",
+  "SIGNAL CONFIRMED. EXTRA CYCLES GRANTED.",
+  "PATTERN MATCH. MAXIMUM REALITY APPROVES.",
+  "VOID ACKNOWLEDGES YOUR DISCOVERY.",
+  "THEMATIC RESONANCE. NICE.",
+  "YOU SEE WHAT OTHERS CANNOT.",
+];
+
+const VOID_GOOD = [
+  "WORD ACCEPTED. MOVING ON.",
+  "LEXICON UPDATED.",
+  "SIGNAL RECEIVED.",
+  "NICE. KEEP GOING.",
+  "THE MATRIX APPROVES.",
+  "THAT ONE COST SOMETHING.",
+];
+
+const VOID_SHUFFLE = [
+  "TILES REARRANGED. NEW ANGLES REVEALED.",
+  "REALITY SHUFFLED. PROCEED.",
+  "GLITCH PATTERN RELOADED.",
+  "NEW CONFIGURATION. NEW POSSIBILITIES.",
+];
+
+// ══════════════════════════════════════════════════════════════
+// GAME STATE
+// ══════════════════════════════════════════════════════════════
+let state = {
+  tiles: [],
+  selectedIndices: [],
+  foundWords: [],
+  score: 0,
+  level: 1,
+  shufflesLeft: 3,
+  timeLeft: 90,
+  timerInterval: null,
+  maxTime: 90,
+  theme: null,
+  bonusWordsFound: [],
+  discardMarked: [],
+  discardMode: false,
+  gameActive: false,
+};
+
+// ══════════════════════════════════════════════════════════════
+// SCREEN MANAGEMENT
+// ══════════════════════════════════════════════════════════════
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-' + id).classList.add('active');
+}
+
+// ══════════════════════════════════════════════════════════════
+// TILE GENERATION
+// ══════════════════════════════════════════════════════════════
+function generateTiles(count) {
+  const tiles = [];
+  // ensure some vowels
+  const vowels = ['A','E','I','O','U'];
+  const numVowels = Math.max(2, Math.floor(count * 0.35));
+  for (let i = 0; i < numVowels; i++) {
+    tiles.push(vowels[Math.floor(Math.random() * vowels.length)]);
+  }
+  while (tiles.length < count) {
+    tiles.push(LETTERS[Math.floor(Math.random() * LETTERS.length)]);
+  }
+  return tiles.sort(() => Math.random() - 0.5);
+}
+
+function pickTheme() {
+  return THEMES[Math.floor(Math.random() * THEMES.length)];
+}
+
+// ══════════════════════════════════════════════════════════════
+// START GAME
+// ══════════════════════════════════════════════════════════════
+function startGame() {
+  clearInterval(state.timerInterval);
+  const tileCount = 8 + Math.floor(Math.random() * 3); // 8-10
+  state = {
+    tiles: generateTiles(tileCount),
+    selectedIndices: [],
+    foundWords: [],
+    score: 0,
+    level: 1,
+    shufflesLeft: 3,
+    timeLeft: 90,
+    timerInterval: null,
+    maxTime: 90,
+    theme: pickTheme(),
+    bonusWordsFound: [],
+    discardMarked: [],
+    discardMode: false,
+    gameActive: false,
+  };
+  showDiscardScreen();
+}
+
+// ══════════════════════════════════════════════════════════════
+// DISCARD SCREEN
+// ══════════════════════════════════════════════════════════════
+function showDiscardScreen() {
+  const container = document.getElementById('discard-tiles');
+  container.innerHTML = '';
+  state.discardMarked = [];
+
+  state.tiles.forEach((letter, i) => {
+    const tile = document.createElement('div');
+    tile.className = 'discard-tile';
+    tile.textContent = letter;
+    tile.style.animationDelay = (i * 0.05) + 's';
+    tile.addEventListener('click', () => toggleDiscardMark(i, tile));
+    container.appendChild(tile);
+  });
+
+  updateDiscardInfo();
+  showScreen('discard');
+}
+
+function toggleDiscardMark(index, el) {
+  const pos = state.discardMarked.indexOf(index);
+  if (pos === -1) {
+    if (state.discardMarked.length >= 2) return;
+    state.discardMarked.push(index);
+    el.classList.add('marked');
+  } else {
+    state.discardMarked.splice(pos, 1);
+    el.classList.remove('marked');
+  }
+  updateDiscardInfo();
+}
+
+function updateDiscardInfo() {
+  const n = state.discardMarked.length;
+  document.getElementById('discard-info').textContent =
+    n === 0 ? 'SELECT TILES TO DISCARD (0/2)' :
+    n === 1 ? '1 TILE MARKED — SELECT 1 MORE OR PROCEED' :
+    '2 TILES MARKED — READY TO COMMIT';
+}
+
+function confirmDiscard() {
+  // Replace marked tiles
+  const newTiles = [...state.tiles];
+  state.discardMarked.forEach(i => {
+    let newLetter;
+    do { newLetter = LETTERS[Math.floor(Math.random() * LETTERS.length)]; }
+    while (newLetter === state.tiles[i]);
+    newTiles[i] = newLetter;
+  });
+  state.tiles = newTiles;
+  initGameScreen();
+}
+
+// ══════════════════════════════════════════════════════════════
+// GAME SCREEN
+// ══════════════════════════════════════════════════════════════
+function initGameScreen() {
+  state.gameActive = true;
+  state.selectedIndices = [];
+
+  document.getElementById('hud-score').textContent = '0';
+  document.getElementById('hud-words').textContent = '0';
+  document.getElementById('level-badge').textContent = `LEVEL 0${state.level} // THEME HIDDEN`;
+  document.getElementById('found-words').innerHTML = '';
+  document.getElementById('word-display').textContent = '_';
+  document.getElementById('word-display').className = 'word-display';
+  document.getElementById('btn-submit').disabled = true;
+
+  // discard button — not available in game phase
+  document.getElementById('btn-discard-mode').disabled = true;
+  document.getElementById('discard-count').textContent = 'PRE-GAME ONLY';
+
+  updateShuffleBtn();
+  renderTiles();
+  updateTimerBar();
+  setVoid("ROUND INITIALIZED. FIND THE SIGNAL.");
+
+  showScreen('game');
+
+  // Start timer
+  state.timerInterval = setInterval(tickTimer, 1000);
+}
+
+function renderTiles() {
+  const area = document.getElementById('tiles-area');
+  area.innerHTML = '';
+  state.tiles.forEach((letter, i) => {
+    const tile = document.createElement('div');
+    tile.className = 'tile';
+    tile.textContent = letter;
+    tile.dataset.pts = LETTER_PTS[letter] || 1;
+    tile.dataset.index = i;
+    tile.style.animationDelay = (i * 0.04) + 's';
+
+    if (state.selectedIndices.includes(i)) tile.classList.add('selected');
+
+    tile.addEventListener('click', () => toggleTile(i));
+    area.appendChild(tile);
+  });
+}
+
+function toggleTile(index) {
+  if (!state.gameActive) return;
+
+  const pos = state.selectedIndices.indexOf(index);
+  if (pos === -1) {
+    state.selectedIndices.push(index);
+  } else {
+    state.selectedIndices.splice(pos, 1);
+  }
+  updateWordDisplay();
+  renderTiles();
+}
+
+function updateWordDisplay() {
+  const word = state.selectedIndices.map(i => state.tiles[i]).join('');
+  const display = document.getElementById('word-display');
+  const submitBtn = document.getElementById('btn-submit');
+
+  if (word.length === 0) {
+    display.textContent = '_';
+    display.className = 'word-display';
+    submitBtn.disabled = true;
+    return;
+  }
+
+  display.textContent = word;
+
+  if (word.length >= 3) {
+    const isValid = WORD_LIST.has(word.toLowerCase()) && !state.foundWords.includes(word.toLowerCase());
+    display.className = 'word-display ' + (isValid ? 'valid' : 'invalid');
+    submitBtn.disabled = !isValid;
+  } else {
+    display.className = 'word-display';
+    submitBtn.disabled = true;
+  }
+}
+
+function clearWord() {
+  state.selectedIndices = [];
+  updateWordDisplay();
+  renderTiles();
+}
+
+function submitWord() {
+  const word = state.selectedIndices.map(i => state.tiles[i]).join('').toLowerCase();
+  if (word.length < 3) return;
+  if (!WORD_LIST.has(word)) return;
+  if (state.foundWords.includes(word)) return;
+
+  state.foundWords.push(word);
+
+  // Score calculation
+  const letterScore = state.selectedIndices.reduce((sum, i) => sum + (LETTER_PTS[state.tiles[i]] || 1), 0);
+  const lengthBonus = word.length >= 6 ? word.length * 2 : word.length >= 5 ? word.length : 0;
+  let pts = letterScore + lengthBonus;
+
+  // Bonus theme check
+  const isBonus = state.theme.words.includes(word);
+  if (isBonus) {
+    pts *= 2;
+    state.bonusWordsFound.push(word);
+    showBonusFlash(word.toUpperCase(), pts);
+    setVoid(VOID_BONUS[Math.floor(Math.random() * VOID_BONUS.length)]);
+  } else {
+    setVoid(VOID_GOOD[Math.floor(Math.random() * VOID_GOOD.length)]);
+  }
+
+  state.score += pts;
+  showScoreFlash('+' + pts);
+
+  // Add to found words UI
+  addFoundWord(word, pts, isBonus);
+
+  document.getElementById('hud-score').textContent = state.score;
+  document.getElementById('hud-words').textContent = state.foundWords.length;
+
+  // Clear selection
+  state.selectedIndices = [];
+  updateWordDisplay();
+  renderTiles();
+
+  // Glitch effect on score
+  document.getElementById('hud-score').classList.add('glitch-anim');
+  setTimeout(() => document.getElementById('hud-score').classList.remove('glitch-anim'), 400);
+}
+
+function addFoundWord(word, pts, isBonus) {
+  const container = document.getElementById('found-words');
+  const el = document.createElement('div');
+  el.className = 'found-word' + (isBonus ? ' bonus' : '');
+  el.innerHTML = word.toUpperCase() + `<span class="word-pts">+${pts}</span>`;
+  container.prepend(el);
+}
+
+// ══════════════════════════════════════════════════════════════
+// SHUFFLE
+// ══════════════════════════════════════════════════════════════
+function shuffleTiles() {
+  if (state.shufflesLeft <= 0 || !state.gameActive) return;
+  state.shufflesLeft--;
+  state.selectedIndices = [];
+
+  // Fisher-Yates shuffle
+  const arr = [...state.tiles];
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  state.tiles = arr;
+
+  updateWordDisplay();
+  renderTiles();
+  updateShuffleBtn();
+  setVoid(VOID_SHUFFLE[Math.floor(Math.random() * VOID_SHUFFLE.length)]);
+}
+
+function updateShuffleBtn() {
+  const btn = document.getElementById('btn-shuffle');
+  const count = document.getElementById('shuffle-count');
+  btn.disabled = state.shufflesLeft <= 0;
+  count.textContent = state.shufflesLeft + ' LEFT';
+}
+
+// ══════════════════════════════════════════════════════════════
+// DISCARD MODE (in-game) — disabled per design
+// ══════════════════════════════════════════════════════════════
+function toggleDiscardMode() {
+  // disabled in game — pre-game only
+}
+
+// ══════════════════════════════════════════════════════════════
+// TIMER
+// ══════════════════════════════════════════════════════════════
+function tickTimer() {
+  state.timeLeft--;
+  const display = document.getElementById('hud-timer');
+  display.textContent = state.timeLeft;
+
+  const pct = state.timeLeft / state.maxTime;
+  display.className = 'hud-value timer';
+  if (pct <= 0.2) display.classList.add('danger');
+  else if (pct <= 0.4) display.classList.add('warning');
+
+  updateTimerBar();
+
+  // Random void chatter
+  if (state.timeLeft % 20 === 0 && state.timeLeft > 0) {
+    setVoid(VOID_IDLE[Math.floor(Math.random() * VOID_IDLE.length)]);
+  }
+
+  if (state.timeLeft <= 10 && state.timeLeft > 0) {
+    setVoid(`${state.timeLeft} SECONDS REMAINING. ACCELERATE.`);
+  }
+
+  if (state.timeLeft <= 0) {
+    endGame();
+  }
+}
+
+function updateTimerBar() {
+  const bar = document.getElementById('timer-bar');
+  const pct = Math.max(0, state.timeLeft / state.maxTime * 100);
+  bar.style.width = pct + '%';
+  bar.className = 'timer-bar';
+  if (pct <= 20) bar.classList.add('danger');
+  else if (pct <= 40) bar.classList.add('warning');
+}
+
+// ══════════════════════════════════════════════════════════════
+// END GAME
+// ══════════════════════════════════════════════════════════════
+function endGame() {
+  clearInterval(state.timerInterval);
+  state.gameActive = false;
+
+  // Grade
+  let grade = 'F', gradeClass = 'f';
+  if (state.score >= 200) { grade = 'S'; gradeClass = 's'; }
+  else if (state.score >= 120) { grade = 'A'; gradeClass = 'a'; }
+  else if (state.score >= 70) { grade = 'B'; gradeClass = 'b'; }
+  else if (state.score >= 30) { grade = 'C'; gradeClass = 'c'; }
+
+  document.getElementById('end-grade').textContent = grade;
+  document.getElementById('end-grade').className = 'grade ' + gradeClass;
+  document.getElementById('end-score').textContent = state.score;
+
+  // Theme reveal
+  document.getElementById('end-theme-name').textContent = state.theme.name;
+  const found = state.bonusWordsFound.length;
+  document.getElementById('end-theme-found').textContent =
+    found === 0 ? 'YOU FOUND 0 BONUS WORDS. THE VOID JUDGES YOU.' :
+    found === 1 ? 'YOU FOUND 1 BONUS WORD. SIGNAL DETECTED.' :
+    `YOU FOUND ${found} BONUS WORDS. IMPRESSIVE SIGNAL LOCK.`;
+
+  // Word list
+  const list = document.getElementById('end-word-list');
+  list.innerHTML = '';
+  state.foundWords.forEach(w => {
+    const el = document.createElement('div');
+    el.className = 'end-word-item' + (state.bonusWordsFound.includes(w) ? ' bonus' : '');
+    el.textContent = w.toUpperCase();
+    list.appendChild(el);
+  });
+
+  if (state.foundWords.length === 0) {
+    const el = document.createElement('div');
+    el.style.color = '#334';
+    el.style.fontSize = '12px';
+    el.textContent = 'NO WORDS FOUND. THE LETTERS WEEP.';
+    list.appendChild(el);
+  }
+
+  setTimeout(() => showScreen('end'), 400);
+}
+
+// ══════════════════════════════════════════════════════════════
+// VOID WALKER
+// ══════════════════════════════════════════════════════════════
+function setVoid(text) {
+  const el = document.getElementById('void-text');
+  el.textContent = text;
+  el.style.animation = 'none';
+  el.offsetHeight; // reflow
+  el.style.animation = '';
+}
+
+// ══════════════════════════════════════════════════════════════
+// FLASH FX
+// ══════════════════════════════════════════════════════════════
+function showBonusFlash(word, pts) {
+  const el = document.createElement('div');
+  el.className = 'bonus-flash';
+  el.innerHTML = `⬡ BONUS WORD ⬡<br>${word}<span class="bonus-pts">+${pts} PTS</span>`;
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 1300);
+}
+
+function showScoreFlash(text) {
+  const el = document.createElement('div');
+  el.className = 'score-flash';
+  el.textContent = text;
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 1100);
+}
+</script>
+</body>
+</html>
