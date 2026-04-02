@@ -2,14 +2,13 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>Cat Runner Pro - Fixed Physics</title>
+<title>Cat Runner Pro - Upgraded</title>
 <style>
-  /* --- PAGE STYLING --- */
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  
+
   body {
-    background-color: #0d0d15; /* Obsidian Black */
-    background-image: 
+    background-color: #0d0d15;
+    background-image:
       radial-gradient(circle at 20% 30%, #161625 0%, transparent 40%),
       radial-gradient(circle at 80% 70%, #161625 0%, transparent 40%);
     height: 100vh;
@@ -19,22 +18,6 @@
     align-items: center;
     font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
     overflow: hidden;
-  }
-
-  .loading-text {
-    margin-bottom: 25px;
-    color: #00f2ff;
-    font-size: 20px;
-    font-weight: 900;
-    text-transform: uppercase;
-    letter-spacing: 5px;
-    text-shadow: 0 0 15px rgba(0, 242, 255, 0.6);
-    animation: pulse 2s ease-in-out infinite;
-  }
-
-  @keyframes pulse {
-    0%, 100% { opacity: 1; transform: scale(1); }
-    50% { opacity: 0.7; transform: scale(0.98); }
   }
 
   /* --- GAME BOX --- */
@@ -49,6 +32,25 @@
     box-shadow: 0 25px 60px rgba(0,0,0,0.9);
   }
 
+  /* --- CLOUDS --- */
+  .cloud {
+    position: absolute;
+    font-size: 48px;
+    opacity: 0.9;
+    animation: drift linear infinite, bob 6s ease-in-out infinite;
+  }
+
+  @keyframes drift {
+    from { transform: translateX(650px); }
+    to   { transform: translateX(-200px); }
+  }
+
+  @keyframes bob {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-6px); }
+  }
+
+  /* --- CAT --- */
   .cat {
     position: absolute;
     left: 50px;
@@ -56,8 +58,7 @@
     font-size: 44px;
     z-index: 10;
     user-select: none;
-    /* Base state: Flipped to face right */
-    transform: scaleX(-1); 
+    transform: scaleX(-1);
     display: inline-block;
   }
 
@@ -67,9 +68,10 @@
     bottom: -18px;
     left: 0px;
     font-size: 32px;
-    transform: scaleX(-1); /* Un-flip the skateboard so it looks right */
+    transform: scaleX(-1);
   }
 
+  /* --- ENTITIES --- */
   .entity {
     position: absolute;
     font-size: 32px;
@@ -77,6 +79,20 @@
     z-index: 5;
   }
 
+  /* --- SPARKLES --- */
+  .sparkle {
+    position: absolute;
+    font-size: 20px;
+    animation: sparkleUp 0.8s ease-out forwards;
+    pointer-events: none;
+  }
+
+  @keyframes sparkleUp {
+    from { opacity: 1; transform: translateY(0) scale(1); }
+    to   { opacity: 0; transform: translateY(-40px) scale(1.6); }
+  }
+
+  /* --- SCORE --- */
   .score-board {
     position: absolute;
     top: 15px;
@@ -91,6 +107,7 @@
     border-radius: 20px;
   }
 
+  /* --- GAME OVER --- */
   .overlay {
     position: absolute;
     top: 0; left: 0; width: 100%; height: 100%;
@@ -103,8 +120,43 @@
     z-index: 100;
   }
 
+  /* --- LOADING AREA BELOW GAME --- */
+  .loading-area {
+    margin-top: 20px;
+    text-align: center;
+    color: #00f2ff;
+    font-weight: bold;
+    text-shadow: 0 0 12px rgba(0, 242, 255, 0.6);
+  }
+
+  .hourglass {
+    font-size: 40px;
+    animation: spin 1.2s linear infinite;
+    display: inline-block;
+    margin-bottom: 8px;
+  }
+
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(360deg); }
+  }
+
+  .loading-text {
+    font-size: 18px;
+    letter-spacing: 2px;
+    animation: loadingCycle 2s steps(4) infinite;
+    white-space: pre;
+  }
+
+  @keyframes loadingCycle {
+    0%   { content: "Loading"; }
+    25%  { content: "Loading."; }
+    50%  { content: "Loading.."; }
+    75%  { content: "Loading..."; }
+  }
+
   .hint {
-    margin-top: 30px;
+    margin-top: 10px;
     color: #555566;
     font-size: 13px;
     font-weight: bold;
@@ -114,166 +166,215 @@
 </head>
 <body>
 
-<div class="loading-text" id="status">Generating World...</div>
-
 <div class="game" id="game" onclick="handleClick()">
   <div class="score-board">🐟 <span id="score">0</span></div>
-  <div class="cat" id="cat">🐈</div>
-  
+  <div class="cat" id="cat">🐈‍⬛</div>
+
+  <!-- Clouds -->
+  <div class="cloud" style="top:20px; animation-duration:32s;">☁️</div>
+  <div class="cloud" style="top:60px; animation-duration:26s;">⛅️</div>
+  <div class="cloud" style="top:10px; animation-duration:40s; font-size:60px;">☁️</div>
+
   <div class="overlay" id="gameOver">
     <h2 style="font-size: 32px; color: #ff4d4d;">MEW-VER!</h2>
     <p style="margin-top: 10px;">Tap to Restart</p>
   </div>
 </div>
 
+<!-- Loading Area -->
+<div class="loading-area">
+  <div class="hourglass">⏳</div>
+  <div class="loading-text" id="loadingText">Loading...</div>
+</div>
+
 <div class="hint">SPACEBAR / CLICK TO JUMP</div>
 
 <script>
-  const game = document.getElementById('game');
-  const cat = document.getElementById('cat');
-  const scoreEl = document.getElementById('score');
-  const gameOverScreen = document.getElementById('gameOver');
+/* --- AUDIO (Procedural Tones) --- */
+function playTone(freq, duration=120, type='sine') {
+  const ctx = new (window.AudioContext || window.webkitAudioContext)();
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.type = type;
+  osc.frequency.value = freq;
+  osc.connect(gain);
+  gain.connect(ctx.destination);
+  osc.start();
+  gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + duration/1000);
+  osc.stop(ctx.currentTime + duration/1000);
+}
 
-  let score = 0;
-  let isJumping = false;
-  let catY = 0;
-  let velocity = 0;
-  let onSkateboard = false;
-  let gameActive = true;
+function soundJump() { playTone(600, 120, 'sine'); }
+function soundFish() { playTone(900, 150, 'triangle'); }
+function soundCrash() { playTone(120, 200, 'square'); }
+function soundPower() { playTone(400, 300, 'sawtooth'); }
 
-  const gravity = -0.55;
-  const jumpPower = 11.5;
-  const groundLevel = 50;
+/* --- GAME LOGIC --- */
+const game = document.getElementById('game');
+const cat = document.getElementById('cat');
+const scoreEl = document.getElementById('score');
+const gameOverScreen = document.getElementById('gameOver');
 
-  let obstacles = [];
-  let items = [];
+let score = 0;
+let isJumping = false;
+let catY = 0;
+let velocity = 0;
+let onSkateboard = false;
+let gameActive = true;
 
-  function spawnEntity() {
-    if (!gameActive) return;
-    const rand = Math.random();
-    if (rand < 0.015) { 
-      const types = ['🕳️', '🪨', '🪵'];
-      createEntity(types[Math.floor(Math.random() * types.length)], 'obstacle', 45);
-    } else if (rand < 0.03) { 
-      createEntity('🐟', 'fish', 130 + Math.random() * 60);
-    } else if (rand < 0.035 && !onSkateboard) { 
-      createEntity('🛹', 'powerup', 50);
+const gravity = -0.55;
+const jumpPower = 11.5;
+const groundLevel = 50;
+
+let obstacles = [];
+let items = [];
+
+/* --- SPARKLES --- */
+function spawnSparkles(x, y) {
+  for (let i = 0; i < 6; i++) {
+    const sp = document.createElement('div');
+    sp.className = 'sparkle';
+    sp.innerHTML = ['✨','💫','🌟'][Math.floor(Math.random()*3)];
+    sp.style.left = x + (Math.random()*20 - 10) + 'px';
+    sp.style.bottom = y + (Math.random()*20 - 10) + 'px';
+    game.appendChild(sp);
+    setTimeout(() => sp.remove(), 800);
+  }
+}
+
+/* --- ENTITY SPAWNING --- */
+function spawnEntity() {
+  if (!gameActive) return;
+  const rand = Math.random();
+  if (rand < 0.015) {
+    const types = ['🕳️','🪨','🪵'];
+    createEntity(types[Math.floor(Math.random()*types.length)], 'obstacle', 45);
+  } else if (rand < 0.03) {
+    createEntity('🐟', 'fish', 130 + Math.random()*60);
+  } else if (rand < 0.035 && !onSkateboard) {
+    createEntity('🛹', 'powerup', 50);
+  }
+}
+
+function createEntity(char, type, y) {
+  const el = document.createElement('div');
+  el.className = 'entity';
+  el.innerHTML = char;
+  el.style.bottom = y + 'px';
+  el.style.left = '620px';
+  game.appendChild(el);
+  const obj = { el, type, x: 620, y };
+  if (type === 'obstacle') obstacles.push(obj);
+  else items.push(obj);
+}
+
+/* --- JUMP --- */
+function jump() {
+  if (!isJumping && gameActive) {
+    isJumping = true;
+    velocity = jumpPower;
+    soundJump();
+  }
+}
+
+/* --- UPDATE LOOP --- */
+function update() {
+  if (!gameActive) return;
+
+  if (isJumping) {
+    catY += velocity;
+    velocity += gravity;
+    if (catY <= 0) {
+      catY = 0;
+      isJumping = false;
     }
   }
 
-  function createEntity(char, type, y) {
-    const el = document.createElement('div');
-    el.className = 'entity';
-    el.innerHTML = char;
-    el.style.bottom = y + 'px';
-    el.style.left = '620px';
-    game.appendChild(el);
-    const obj = { el, type, x: 620, y };
-    if (type === 'obstacle') obstacles.push(obj);
-    else items.push(obj);
-  }
+  cat.style.bottom = (groundLevel + catY) + "px";
+  cat.style.transform = `scaleX(-1) rotate(${isJumping ? velocity * -2 : 0}deg)`;
 
-  function jump() {
-    if (!isJumping && gameActive) {
-      isJumping = true;
-      velocity = jumpPower;
-    }
-  }
+  const speed = onSkateboard ? 9 : 6;
 
-  function update() {
-    if (!gameActive) return;
+  [obstacles, items].forEach((list) => {
+    for (let i = list.length - 1; i >= 0; i--) {
+      const o = list[i];
+      o.x -= speed;
+      o.el.style.left = o.x + 'px';
 
-    if (isJumping) {
-      catY += velocity;
-      velocity += gravity;
-      if (catY <= 0) {
-        catY = 0;
-        isJumping = false;
-      }
-    }
-    
-    cat.style.bottom = (groundLevel + catY) + "px";
-    
-    // FIXED PHYSICS: Correcting the rotation for a flipped element
-    // We use scaleX(-1) to keep him facing right, then rotate positive degrees to lean forward.
-    let rotation = isJumping ? (velocity * -2) : 0;
-    cat.style.transform = `scaleX(-1) rotate(${rotation}deg)`;
+      const catRect = cat.getBoundingClientRect();
+      const objRect = o.el.getBoundingClientRect();
 
-    const speed = onSkateboard ? 9 : 6;
-    
-    [obstacles, items].forEach((list) => {
-      for (let i = list.length - 1; i >= 0; i--) {
-        const o = list[i];
-        o.x -= speed;
-        o.el.style.left = o.x + 'px';
+      const overlap =
+        catRect.right > objRect.left + 15 &&
+        catRect.left < objRect.right - 15 &&
+        catRect.bottom > objRect.top + 10 &&
+        catRect.top < objRect.bottom - 10;
 
-        const catRect = cat.getBoundingClientRect();
-        const objRect = o.el.getBoundingClientRect();
-
-        if (catRect.right > objRect.left + 15 && 
-            catRect.left < objRect.right - 15 && 
-            catRect.bottom > objRect.top + 10 && 
-            catRect.top < objRect.bottom - 10) {
-          
-          if (o.type === 'fish') {
-            score++;
-            scoreEl.innerText = score;
-            removeEntity(o, list, i);
-          } else if (o.type === 'powerup') {
-            activateSkateboard();
-            removeEntity(o, list, i);
-          } else if (o.type === 'obstacle' && !onSkateboard) {
-            endGame();
-          }
+      if (overlap) {
+        if (o.type === 'fish') {
+          score++;
+          scoreEl.innerText = score;
+          soundFish();
+          spawnSparkles(catRect.left + 20, catRect.bottom - 20);
+          removeEntity(o, list, i);
+        } else if (o.type === 'powerup') {
+          activateSkateboard();
+          soundPower();
+          removeEntity(o, list, i);
+        } else if (o.type === 'obstacle' && !onSkateboard) {
+          soundCrash();
+          endGame();
         }
-        if (o.x < -60) removeEntity(o, list, i);
       }
-    });
 
-    spawnEntity();
-    requestAnimationFrame(update);
-  }
-
-  function removeEntity(obj, list, index) {
-    obj.el.remove();
-    list.splice(index, 1);
-  }
-
-  function activateSkateboard() {
-    onSkateboard = true;
-    cat.classList.add('skateboarding');
-    setTimeout(() => {
-      onSkateboard = false;
-      cat.classList.remove('skateboarding');
-    }, 6000);
-  }
-
-  function endGame() {
-    gameActive = false;
-    gameOverScreen.style.display = 'flex';
-  }
-
-  function reset() {
-    obstacles.forEach(o => o.el.remove());
-    items.forEach(i => i.el.remove());
-    obstacles = []; items = [];
-    score = 0; scoreEl.innerText = 0;
-    catY = 0; velocity = 0; isJumping = false;
-    gameActive = true;
-    gameOverScreen.style.display = 'none';
-    update();
-  }
-
-  function handleClick() {
-    if(!gameActive) reset(); 
-    else jump();
-  }
-
-  window.addEventListener('keydown', e => { 
-    if(e.code === 'Space') { e.preventDefault(); jump(); } 
+      if (o.x < -60) removeEntity(o, list, i);
+    }
   });
 
+  spawnEntity();
+  requestAnimationFrame(update);
+}
+
+function removeEntity(obj, list, index) {
+  obj.el.remove();
+  list.splice(index, 1);
+}
+
+function activateSkateboard() {
+  onSkateboard = true;
+  cat.classList.add('skateboarding');
+  setTimeout(() => {
+    onSkateboard = false;
+    cat.classList.remove('skateboarding');
+  }, 6000);
+}
+
+function endGame() {
+  gameActive = false;
+  gameOverScreen.style.display = 'flex';
+}
+
+function reset() {
+  obstacles.forEach(o => o.el.remove());
+  items.forEach(i => i.el.remove());
+  obstacles = []; items = [];
+  score = 0; scoreEl.innerText = 0;
+  catY = 0; velocity = 0; isJumping = false;
+  gameActive = true;
+  gameOverScreen.style.display = 'none';
   update();
+}
+
+function handleClick() {
+  if (!gameActive) reset();
+  else jump();
+}
+
+window.addEventListener('keydown', e => {
+  if (e.code === 'Space') { e.preventDefault(); jump(); }
+});
+
+update();
 </script>
 
 </body>
