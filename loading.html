@@ -2,174 +2,243 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>Cat Loading Runner</title>
+<title>Cat Runner Pro</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
-    background: #87ceeb; /* blue sky */
+    background: #2c3e50;
     height: 100vh;
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    font-family: system-ui, sans-serif;
+    font-family: 'Courier New', Courier, monospace;
     overflow: hidden;
   }
 
   .loading-text {
     margin-bottom: 12px;
-    color: #ffffff;
-    font-size: 14px;
-    letter-spacing: 0.1em;
-    text-shadow: 0 1px 3px rgba(0,0,0,0.4);
+    color: #ecf0f1;
+    font-size: 18px;
+    font-weight: bold;
+    text-transform: uppercase;
   }
 
   .game {
     position: relative;
-    width: 480px;
-    max-width: 100vw;
-    height: 200px;
+    width: 600px;
+    height: 250px;
+    background: linear-gradient(#87ceeb 70%, #3fa63f 70%);
     overflow: hidden;
-    border-radius: 12px;
-    background: #87ceeb;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-  }
-
-  .grass {
-    position: absolute;
-    bottom: 0;
-    width: 200%;
-    height: 40px;
-    background: repeating-linear-gradient(
-      to right,
-      #3fa63f 0,
-      #3fa63f 20px,
-      #2f8c2f 20px,
-      #2f8c2f 40px
-    );
-    animation: grassMove 0.6s linear infinite;
-  }
-
-  @keyframes grassMove {
-    from { transform: translateX(0); }
-    to { transform: translateX(-40px); }
+    border: 4px solid #fff;
+    border-radius: 8px;
   }
 
   .cat {
     position: absolute;
-    left: 60px;
-    bottom: 40px;
-    font-size: 48px;
-    transform: scaleX(-1); /* face right */
-  }
-
-  .fish {
-    position: absolute;
-    right: -60px;
-    bottom: 40px;
+    left: 50px;
+    bottom: 50px;
     font-size: 40px;
+    z-index: 10;
+    transition: transform 0.1s;
   }
 
-  .hint {
-    margin-top: 10px;
-    font-size: 12px;
-    color: #ffffff;
-    text-shadow: 0 1px 3px rgba(0,0,0,0.4);
+  .skateboarding {
+    transform: scaleX(-1) translateY(5px);
+  }
+
+  .skateboarding::after {
+    content: '🛹';
+    position: absolute;
+    bottom: -15px;
+    left: 5px;
+    font-size: 30px;
+  }
+
+  .entity {
+    position: absolute;
+    font-size: 30px;
+    user-select: none;
+  }
+
+  .score-board {
+    position: absolute;
+    top: 10px;
+    right: 20px;
+    color: white;
+    font-size: 20px;
+    text-shadow: 2px 2px 0 #000;
+  }
+
+  .overlay {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.5);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    color: white;
+    flex-direction: column;
+    z-index: 100;
   }
 </style>
 </head>
 <body>
 
-<div class="loading-text">Loading… Catch the fish</div>
+<div class="loading-text" id="status">Crunching Data...</div>
 
 <div class="game" id="game">
-  <div class="grass"></div>
+  <div class="score-board">Fish: <span id="score">0</span></div>
   <div class="cat" id="cat">🐈‍⬛</div>
-  <div class="fish" id="fish">🐟</div>
+  <div class="overlay" id="gameOver">
+    <h2>Ouch!</h2>
+    <p>Click to Try Again</p>
+  </div>
 </div>
 
-<div class="hint">Tap / click / press space to jump</div>
-
 <script>
-  const cat = document.getElementById("cat");
-  const fish = document.getElementById("fish");
-  const game = document.getElementById("game");
+  const game = document.getElementById('game');
+  const cat = document.getElementById('cat');
+  const scoreEl = document.getElementById('score');
+  const gameOverScreen = document.getElementById('gameOver');
 
+  let score = 0;
   let isJumping = false;
-  let velocity = 0;
   let catY = 0;
-  const gravity = -0.6;
-  const jumpPower = 11;
-  const maxJump = 110;
+  let velocity = 0;
+  let onSkateboard = false;
+  let gameActive = true;
 
-  let fishX = game.clientWidth;
-  const fishSpeed = 4;
+  const gravity = -0.5;
+  const jumpPower = 12;
+  const groundLevel = 50;
 
-  function jump() {
-    if (isJumping) return;
-    isJumping = true;
-    velocity = jumpPower;
+  // Game State Arrays
+  let obstacles = [];
+  let items = [];
+
+  function spawnEntity() {
+    if (!gameActive) return;
+    
+    const rand = Math.random();
+    if (rand < 0.02) { // Spawn Obstacle (Hole, Rock, Log)
+      const types = ['🕳️', '🪨', '🪵'];
+      createEntity(types[Math.floor(Math.random() * types.length)], 'obstacle', 45);
+    } else if (rand < 0.04) { // Spawn Fish (High up)
+      createEntity('🐟', 'fish', 130 + Math.random() * 50);
+    } else if (rand < 0.045 && !onSkateboard) { // Spawn Skateboard
+      createEntity('🛹', 'powerup', 50);
+    }
   }
 
-  function updateCat() {
+  function createEntity(char, type, y) {
+    const el = document.createElement('div');
+    el.className = 'entity';
+    el.innerHTML = char;
+    el.style.bottom = y + 'px';
+    el.style.left = '620px';
+    game.appendChild(el);
+    
+    const obj = { el, type, x: 620, y, width: 30 };
+    if (type === 'obstacle') obstacles.push(obj);
+    else items.push(obj);
+  }
+
+  function jump() {
+    if (!isJumping) {
+      isJumping = true;
+      velocity = jumpPower;
+    }
+  }
+
+  function update() {
+    if (!gameActive) return;
+
+    // Physics
     if (isJumping) {
       catY += velocity;
       velocity += gravity;
-
       if (catY <= 0) {
         catY = 0;
         isJumping = false;
-        velocity = 0;
       }
-      if (catY > maxJump) catY = maxJump;
     }
-    cat.style.bottom = (40 + catY) + "px";
+    cat.style.bottom = (groundLevel + catY) + 'px';
+
+    // Move Entities
+    const speed = onSkateboard ? 8 : 5;
+    
+    [obstacles, items].forEach((list, listIdx) => {
+      for (let i = list.length - 1; i >= 0; i--) {
+        const o = list[i];
+        o.x -= speed;
+        o.el.style.left = o.x + 'px';
+
+        // Collision Detection
+        const catRect = cat.getBoundingClientRect();
+        const objRect = o.el.getBoundingClientRect();
+
+        if (catRect.right > objRect.left + 10 && 
+            catRect.left < objRect.right - 10 && 
+            catRect.bottom > objRect.top + 10 && 
+            catRect.top < objRect.bottom - 10) {
+          
+          if (o.type === 'fish') {
+            score++;
+            scoreEl.innerText = score;
+            removeEntity(o, list, i);
+          } else if (o.type === 'powerup') {
+            activateSkateboard();
+            removeEntity(o, list, i);
+          } else if (o.type === 'obstacle' && !onSkateboard) {
+            endGame();
+          }
+        }
+
+        if (o.x < -50) removeEntity(o, list, i);
+      }
+    });
+
+    spawnEntity();
+    requestAnimationFrame(update);
   }
 
-  function resetFish() {
-    fishX = game.clientWidth + Math.random() * 120;
+  function removeEntity(obj, list, index) {
+    obj.el.remove();
+    list.splice(index, 1);
   }
 
-  function updateFish() {
-    fishX -= fishSpeed;
-    if (fishX < -60) resetFish();
-    fish.style.right = (game.clientWidth - fishX) + "px";
+  function activateSkateboard() {
+    onSkateboard = true;
+    cat.classList.add('skateboarding');
+    setTimeout(() => {
+      onSkateboard = false;
+      cat.classList.remove('skateboarding');
+    }, 6000);
   }
 
-  function checkCatch() {
-    const catRect = cat.getBoundingClientRect();
-    const fishRect = fish.getBoundingClientRect();
-
-    const overlap =
-      catRect.left < fishRect.right &&
-      catRect.right > fishRect.left &&
-      catRect.top < fishRect.bottom &&
-      catRect.bottom > fishRect.top;
-
-    if (overlap) {
-      fish.style.opacity = "0.2";
-      setTimeout(() => fish.style.opacity = "1", 150);
-      resetFish();
-    }
+  function endGame() {
+    gameActive = false;
+    gameOverScreen.style.display = 'flex';
   }
 
-  function loop() {
-    updateCat();
-    updateFish();
-    checkCatch();
-    requestAnimationFrame(loop);
+  function reset() {
+    obstacles.forEach(o => o.el.remove());
+    items.forEach(i => i.el.remove());
+    obstacles = [];
+    items = [];
+    score = 0;
+    scoreEl.innerText = 0;
+    gameActive = true;
+    gameOverScreen.style.display = 'none';
+    update();
   }
 
-  game.addEventListener("click", jump);
-  window.addEventListener("keydown", e => {
-    if (e.code === "Space") {
-      e.preventDefault();
-      jump();
-    }
-  });
+  window.addEventListener('keydown', e => { if(e.code === 'Space') jump(); });
+  game.addEventListener('touchstart', jump);
+  game.addEventListener('mousedown', () => { if(!gameActive) reset(); else jump(); });
 
-  resetFish();
-  loop();
+  update();
 </script>
 
 </body>
