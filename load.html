@@ -72,6 +72,24 @@
     align-items: center; color: white; flex-direction: column; z-index: 100;
   }
 
+    .cloud {
+    position: absolute;
+    font-size: 50px;
+    opacity: 0.8;
+    z-index: 1;
+    pointer-events: none;
+    /* This ensures they stay within the sky area */
+    top: 20px; 
+    /* Start them off-screen to the right */
+    left: 100%; 
+    animation: drift linear infinite;
+  }
+
+  @keyframes drift {
+    from { transform: translateX(50px); } /* Start just outside the right edge */
+    to   { transform: translateX(-800px); } /* Drift far to the left */
+  }
+
   .loading-area { margin-top: 20px; color: #00f2ff; text-align: center; }
 </style>
 </head>
@@ -79,12 +97,21 @@
 
 <div class="stage" id="gameStage">
   <div class="score">FISH: <span id="scoreVal">0</span></div>
+  <div class="cloud" style="top:10px; animation-duration:30s; animation-delay: -5s;">☁️</div>
+  <div class="cloud" style="top:40px; animation-duration:20s; animation-delay: -15s;">⛅</div>
+  <div class="cloud" style="top:70px; animation-duration:40s; font-size:60px;">☁️</div>
   <div class="cat" id="cat">🐈‍⬛</div>
   <div class="overlay" id="gameOver">
     <h2 style="color: #ff4d4d;">MEW-VER!</h2>
     <p>Tap to Restart</p>
   </div>
 </div>
+  
+
+  
+  
+
+ 
 
 <div class="loading-area">
   <div style="font-size:24px; animation: spin 2s infinite linear;">⏳</div>
