@@ -3,54 +3,49 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>Cat Runner - Safari Proof</title>
+<title>Maximum Reality - Safari Fix</title>
 <style>
-  * { 
-    margin: 0; 
-    padding: 0; 
-    box-sizing: border-box; 
-    /* Stops the "tap highlight" gray box on iOS */
-    -webkit-tap-highlight-color: transparent; 
+  /* STOP ALL GESTURES AT THE ROOT */
+  html, body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    touch-action: none; /* No pinch, no double tap, no scroll */
+    background-color: #0d0d15;
+    -webkit-text-size-adjust: 100%; /* Stop font-size zooming */
   }
 
   body {
-    background-color: #0d0d15;
-    height: 100vh;
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    font-family: 'Segoe UI', sans-serif;
-    overflow: hidden;
-    /* Stops Safari from trying to be helpful with gestures */
-    touch-action: none; 
     -webkit-user-select: none;
     user-select: none;
+    -webkit-tap-highlight-color: transparent;
   }
 
-  /* --- GAME BOX --- */
-  .game {
+  /* Container to keep the game from moving */
+  .stage {
     position: relative;
     width: 600px;
     height: 250px;
     background: linear-gradient(#87ceeb 70%, #3fa63f 70%);
-    overflow: hidden;
-    border: 8px solid #1f1f2e;
+    border: 6px solid #1f1f2e;
     border-radius: 20px;
-    box-shadow: 0 25px 60px rgba(0,0,0,0.9);
-    /* Specifically tells Safari: "Only scroll/zoom if I say so" (which is never) */
-    touch-action: manipulation; 
+    overflow: hidden;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.8);
   }
 
-  /* --- CAT & ENTITIES --- */
   .cat {
     position: absolute;
-    left: 50px;
+    left: 40px;
     bottom: 50px;
     font-size: 44px;
-    z-index: 10;
     transform: scaleX(-1);
-    transition: transform 0.1s linear;
+    z-index: 10;
   }
 
   .skateboarding::after {
@@ -60,76 +55,86 @@
 
   .entity { position: absolute; font-size: 32px; z-index: 5; }
   
-  .score-board {
-    position: absolute; top: 15px; left: 20px; color: white; font-size: 18px;
-    font-weight: bold; z-index: 20; background: rgba(0,0,0,0.3); padding: 5px 12px; border-radius: 15px;
+  .score {
+    position: absolute; top: 15px; left: 20px; color: white;
+    font-size: 18px; font-weight: bold; z-index: 20;
+    background: rgba(0,0,0,0.3); padding: 5px 12px; border-radius: 15px;
   }
 
   .overlay {
     position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(0,0,0,0.85); display: none; justify-content: center;
+    background: rgba(0,0,0,0.9); display: none; justify-content: center;
     align-items: center; color: white; flex-direction: column; z-index: 100;
   }
 
-  /* --- DECOR --- */
-  .cloud { position: absolute; font-size: 50px; opacity: 0.8; animation: drift linear infinite; }
-  @keyframes drift { from { left: 650px; } to { left: -150px; } }
-
-  .loading-area { margin-top: 25px; text-align: center; color: #00f2ff; }
-  .hourglass { font-size: 30px; animation: spin 1.5s infinite; display: inline-block; }
-  @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(180deg); } }
+  .loading-area { margin-top: 20px; color: #00f2ff; text-align: center; }
 </style>
 </head>
 <body>
 
-<div class="game" id="game">
-  <div class="score-board">FISH: <span id="score">0</span></div>
+<div class="stage" id="gameStage">
+  <div class="score">FISH: <span id="scoreVal">0</span></div>
   <div class="cat" id="cat">🐈‍⬛</div>
-  
-  <div class="cloud" style="top:15px; animation-duration:35s;">☁️</div>
-  <div class="cloud" style="top:60px; animation-duration:22s;">⛅</div>
-
   <div class="overlay" id="gameOver">
-    <h2 style="color: #ff4d4d; margin-bottom: 10px;">MEW-VER!</h2>
-    <p style="color: #00f2ff; font-weight: bold;">TAP TO RESTART</p>
+    <h2 style="color: #ff4d4d;">MEW-VER!</h2>
+    <p>Tap to Restart</p>
   </div>
 </div>
 
 <div class="loading-area">
-  <div class="hourglass">⏳</div>
-  <div style="font-weight:bold; letter-spacing:2px;">MAXIMUM REALITY</div>
+  <div style="font-size:24px; animation: spin 2s infinite linear;">⏳</div>
+  <div style="letter-spacing: 2px; font-weight:bold;">MAXIMUM REALITY</div>
+  <div style="font-size: 10px; opacity: 0.5; margin-top: 5px;">(TAP TO JUMP & START AUDIO)</div>
 </div>
 
 <script>
-const game = document.getElementById('game');
-const cat = document.getElementById('cat');
-const scoreEl = document.getElementById('score');
-const gameOverScreen = document.getElementById('gameOver');
+/* --- AUDIO ENGINE --- */
+let audioCtx = null;
 
-let score = 0, isJumping = false, catY = 0, velocity = 0, onSkateboard = false, gameActive = true;
-const gravity = -0.58, jumpPower = 12, groundLevel = 50;
+function initAudio() {
+  if (!audioCtx) {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+  if (audioCtx.state === 'suspended') {
+    audioCtx.resume();
+  }
+}
+
+function playNote(freq, type = 'sine') {
+  if (!audioCtx) return;
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.type = type;
+  osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+  gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.2);
+  osc.connect(gain);
+  gain.connect(audioCtx.destination);
+  osc.start();
+  osc.stop(audioCtx.currentTime + 0.2);
+}
+
+/* --- GAME STATE --- */
+const stage = document.getElementById('gameStage');
+const cat = document.getElementById('cat');
+const scoreEl = document.getElementById('scoreVal');
+const overlay = document.getElementById('gameOver');
+
+let score = 0, isJumping = false, catY = 0, velocity = 0, gameActive = true, skateboard = false;
 let obstacles = [], items = [];
 
-// --- SAFARI TOUCH FIX ---
-// We use preventDefault on touchstart to kill the double-tap zoom 
-// and the "fast tap" focus logic Safari uses.
-game.addEventListener('touchstart', function(e) {
-  e.preventDefault(); 
-  if (!gameActive) reset();
-  else jump();
+// THE FIX: Listen for touchstart and STOP EVERYTHING ELSE
+stage.addEventListener('touchstart', function(e) {
+  e.preventDefault(); // Stop zoom/scroll
+  initAudio(); // Initialize audio on first tap
+  if (!gameActive) reset(); else jump();
 }, { passive: false });
-
-// Mouse support for desktop
-game.addEventListener('mousedown', function(e) {
-  if (e.pointerType === 'touch') return; // Handled by touchstart
-  if (!gameActive) reset();
-  else jump();
-});
 
 function jump() {
   if (!isJumping && gameActive) {
     isJumping = true;
-    velocity = jumpPower;
+    velocity = 12;
+    playNote(600, 'triangle');
   }
 }
 
@@ -138,77 +143,78 @@ function update() {
 
   if (isJumping) {
     catY += velocity;
-    velocity += gravity;
+    velocity -= 0.6;
     if (catY <= 0) { catY = 0; isJumping = false; }
   }
+  cat.style.bottom = (50 + catY) + "px";
+  cat.style.transform = `scaleX(-1) rotate(${isJumping ? velocity * -2 : 0}deg)`;
 
-  cat.style.bottom = (groundLevel + catY) + "px";
-  let rot = isJumping ? (velocity * -2.5) : 0;
-  cat.style.transform = `scaleX(-1) rotate(${rot}deg)`;
-
-  const speed = onSkateboard ? 9.5 : 6.5;
-
-  [obstacles, items].forEach((list) => {
+  const speed = skateboard ? 10 : 7;
+  
+  [obstacles, items].forEach(list => {
     for (let i = list.length - 1; i >= 0; i--) {
       const o = list[i];
       o.x -= speed;
       o.el.style.left = o.x + 'px';
 
-      const catRect = cat.getBoundingClientRect();
-      const objRect = o.el.getBoundingClientRect();
+      const cR = cat.getBoundingClientRect();
+      const oR = o.el.getBoundingClientRect();
 
-      if (catRect.right > objRect.left + 15 && catRect.left < objRect.right - 15 && 
-          catRect.bottom > objRect.top + 10 && catRect.top < objRect.bottom - 10) {
-        
+      if (cR.right > oR.left + 15 && cR.left < oR.right - 15 && cR.bottom > oR.top + 10 && cR.top < oR.bottom - 10) {
         if (o.type === 'fish') {
           score++; scoreEl.innerText = score;
-          removeEntity(o, list, i);
-        } else if (o.type === 'powerup') {
-          onSkateboard = true; cat.classList.add('skateboarding');
-          setTimeout(() => { onSkateboard = false; cat.classList.remove('skateboarding'); }, 6000);
-          removeEntity(o, list, i);
-        } else if (o.type === 'obstacle' && !onSkateboard) {
-          gameActive = false; gameOverScreen.style.display = 'flex';
+          playNote(900, 'sine');
+          remove(o, list, i);
+        } else if (o.type === 'skate') {
+          skateboard = true; cat.classList.add('skateboarding');
+          playNote(400, 'square');
+          setTimeout(() => { skateboard = false; cat.classList.remove('skateboarding'); }, 5000);
+          remove(o, list, i);
+        } else if (o.type === 'trap' && !skateboard) {
+          gameActive = false; overlay.style.display = 'flex';
+          playNote(150, 'sawtooth');
         }
       }
-      if (o.x < -60) removeEntity(o, list, i);
+      if (o.x < -60) remove(o, list, i);
     }
   });
 
-  if (Math.random() < 0.02) spawnEntity();
+  if (Math.random() < 0.02) spawn();
   requestAnimationFrame(update);
 }
 
-function spawnEntity() {
-  const rand = Math.random();
-  if (rand < 0.4) createEntity(['🕳️','🪨','🪵'][Math.floor(Math.random()*3)], 'obstacle', 45);
-  else if (rand < 0.8) createEntity('🐟', 'fish', 135 + Math.random()*55);
-  else if (!onSkateboard) createEntity('🛹', 'powerup', 50);
+function spawn() {
+  const r = Math.random();
+  if (r < 0.4) create(['🕳️','🪨','🪵'][Math.floor(Math.random()*3)], 'trap', 45);
+  else if (r < 0.8) create('🐟', 'fish', 140 + Math.random()*50);
+  else if (!skateboard) create('🛹', 'skate', 50);
 }
 
-function createEntity(char, type, y) {
+function create(char, type, y) {
   const el = document.createElement('div');
-  el.className = 'entity';
-  el.innerHTML = char;
-  el.style.bottom = y + 'px';
-  el.style.left = '620px';
-  game.appendChild(el);
-  obstacles.push({ el, type, x: 620 }) && type === 'obstacle' || items.push({ el, type, x: 620 });
+  el.className = 'entity'; el.innerHTML = char;
+  el.style.bottom = y + 'px'; el.style.left = '620px';
+  stage.appendChild(el);
+  (type === 'trap' ? obstacles : items).push({ el, type, x: 620 });
 }
 
-function removeEntity(obj, list, index) { obj.el.remove(); list.splice(index, 1); }
+function remove(obj, list, index) { obj.el.remove(); list.splice(index, 1); }
 
 function reset() {
   [...obstacles, ...items].forEach(o => o.el.remove());
   obstacles = []; items = []; score = 0; scoreEl.innerText = 0;
   catY = 0; velocity = 0; isJumping = false; gameActive = true;
-  gameOverScreen.style.display = 'none';
+  overlay.style.display = 'none';
   update();
 }
 
-window.addEventListener('keydown', e => { if (e.code === 'Space') { e.preventDefault(); jump(); } });
+window.addEventListener('keydown', e => { if(e.code === 'Space') { e.preventDefault(); jump(); } });
 update();
 </script>
+
+<style>
+  @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+</style>
 
 </body>
 </html>
